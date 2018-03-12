@@ -30,8 +30,14 @@
 /* !GENERAL: Overlay box */
 /* !-------------------------------------------- */
 
+/*d3v3's brush background*/
 #overlay {
 display: none;
+}
+
+/*overlay changed in d3v4*/
+.overlay{
+    visibility: hidden;
 }
 
 body.overlay:before {
@@ -123,7 +129,7 @@ top: 50px;
 width: 100%;
 }
 
-#overlay.overlay-blocker > .tabswitcher, 
+#overlay.overlay-blocker > .tabswitcher,
 #overlay.overlay-blocker > .overlay-sidebar {
 display: none;
 }
@@ -132,7 +138,7 @@ display: none;
 top: 81px; /* depends on the tabswitcher's height, defined in base.css ! */
 }
 
-#overlay.overlay-blocker .overlay-content, 
+#overlay.overlay-blocker .overlay-content,
 #overlay.overlay-blocker > .tabswitcher + .overlay-content {
 top: 0;
 }
@@ -279,7 +285,7 @@ width: 86%;
 display: none;
 }
 
-#overlay.dialog-upload.overlay-blocker .blocker, 
+#overlay.dialog-upload.overlay-blocker .blocker,
 #overlay.dialog-upload .uploader.active {
 display: block;
 }
@@ -341,7 +347,7 @@ width: auto;
 
 /* Define later:
 
-#overlay.node-type-gibberish 
+#overlay.node-type-gibberish
 
 */
 

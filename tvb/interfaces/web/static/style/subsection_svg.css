@@ -116,6 +116,13 @@ g.tsv-moving {
     shape-rendering: crispEdges;
 }
 
+/*d3v4 extent=>selection*/
+.tsv-brush .selection {
+    stroke: #fff;
+    fill-opacity: .5;
+    shape-rendering: crispEdges;
+}
+
 .tsv-line {
     stroke: steelblue;
     stroke-width: 1;

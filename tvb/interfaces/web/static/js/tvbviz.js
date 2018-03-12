@@ -312,8 +312,10 @@ tv.plot = {
             var ma_ax_x = d3.svg.axis().orient("top").scale(ma_sc_x)
                 , ma_ax_y = d3.svg.axis().orient("left").scale(ma_sc_y)
                 , cb_ax_y = d3.svg.axis().orient("right").scale(cb_sc_y)
-                , ma_gp = root.append("g").attr("transform", "translate(" + f.pad() * f.w() + ", " + f.h() * f.pad() + ")")
-                , cb_gp = root.append("g").attr("transform", "translate(" + (f.w() * (1 - 2 * f.pad())) + ", " + f.h() * f.pad() + ")")
+                ,
+                ma_gp = root.append("g").attr("transform", "translate(" + f.pad() * f.w() + ", " + f.h() * f.pad() + ")")
+                ,
+                cb_gp = root.append("g").attr("transform", "translate(" + (f.w() * (1 - 2 * f.pad())) + ", " + f.h() * f.pad() + ")")
             ;
 
 
@@ -343,7 +345,7 @@ tv.plot = {
                 .attr("width", ma_sz_x)
                 .attr("height", ma_sz_y)
                 .on("mouseover", f.mat_over() || function () {
-                    });
+                });
 
             ma_gp.append("g").attr("class", "x axis").call(ma_ax_x);
             ma_gp.append("g").attr("class", "y axis").call(ma_ax_y);
@@ -655,13 +657,13 @@ tv.plot = {
                 })
                 .attr("x", f.w() - f.pad.x / 2).attr("y", f.h() - f.pad.y / 2)
                 .attr("width", f.pad.x / 2).attr("height", f.pad.y / 2)
-                .call(d3.behavior.drag().on("drag", function () {
+                .call(d3.drag().on("drag", function () {
                     var p1 = d3.mouse(svg.node())
                         , p2 = resize_start
                         , scl = {x: p1[0] / p2[0], y: p1[1] / p2[1]};
                     rgp.attr("transform", "scale(" + scl.x + ", " + scl.y + ")");
                     svg.attr("width", scl.x * f.w()).attr("height", scl.y * f.h());
-                }).on("dragstart", function () {
+                }).on("start", function () {
                     resize_start = d3.mouse(rgp.node());
                 }));
         };
@@ -684,7 +686,7 @@ tv.plot = {
                 f.prepare_data();
                 f.render_focus();
             } else {
-                if (!(f.br_ctx_y.empty())) {
+                if (!(f.br_ctx_y === null)) {
                     var ext = f.br_ctx_y.extent();
                     var dx = dr ? 1 : -1;
                     f.br_ctx_y.extent([ext[0] + dx, ext[1] + dx]);
@@ -719,16 +721,16 @@ tv.plot = {
                 .append("g").classed("line-plot", true);
 
             // scales for vertical and horizontal context, and the x and y axis of the focus area
-            f.sc_ctx_y = d3.scale.linear().domain([-1, f.shape()[2]]).range([f.sz_ctx_y.y, 0]);
-            f.sc_ctx_x = d3.scale.linear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_ctx_x.x]);
-            f.sc_fcs_x = d3.scale.linear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_fcs.x]);
-            f.sc_fcs_y = d3.scale.linear().domain([-1, f.shape()[2] + 1]).range([f.sz_fcs.y, 0]);
+            f.sc_ctx_y = d3.scaleLinear().domain([-1, f.shape()[2]]).range([f.sz_ctx_y.y, 0]);
+            f.sc_ctx_x = d3.scaleLinear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_ctx_x.x]);
+            f.sc_fcs_x = d3.scaleLinear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_fcs.x]);
+            f.sc_fcs_y = d3.scaleLinear().domain([-1, f.shape()[2] + 1]).range([f.sz_fcs.y, 0]);
 
             // axes for each of the above scales
-            f.ax_ctx_y = d3.svg.axis().orient("left").scale(f.sc_ctx_y);
-            f.ax_ctx_x = d3.svg.axis().orient("bottom").scale(f.sc_ctx_x);
-            f.ax_fcs_x = d3.svg.axis().orient("top").scale(f.sc_fcs_x);
-            f.ax_fcs_y = d3.svg.axis().orient("left").scale(f.sc_fcs_y);
+            f.ax_ctx_y = d3.axisLeft(f.sc_ctx_y);
+            f.ax_ctx_x = d3.axisBottom(f.sc_ctx_x);
+            f.ax_fcs_x = d3.axisTop(f.sc_fcs_x);
+            f.ax_fcs_y = d3.axisLeft(f.sc_fcs_y);
 
             f.ax_fcs_y.tickFormat(f.signal_tick_labeler);
             f.ax_ctx_y.tickFormat(f.signal_tick_labeler);
@@ -799,7 +801,7 @@ tv.plot = {
                 }
             }
 
-            // scale average siganl by ptp
+            // scale average signal by ptp
             var _dar = new tv.ndar(da_x);
             var da_max = _dar.max()
                 , da_min = _dar.min()
@@ -848,14 +850,15 @@ tv.plot = {
                 f.line_paths = g.enter()
                     .append("g")
                     .attr("transform", function (d, i) {
-                        return "translate(0, " + f.sc_fcs_y(i) + ")";
+                        return "translate(0, " + f.sc_fcs_y(i) + ")scale(1,3)";
                     })
                     .append("path")
                     .attr("vector-effect", "non-scaling-stroke");
             }
 
-            g.select("path").attr("d", function (d) {
-                return d3.svg.line()
+
+            f.line_paths.attr("d", function (d) {
+                return d3.line()
                     .x(function (dd, i) {
                         return f.sc_ctx_x(ts.data[i]);
                     })
@@ -879,7 +882,7 @@ tv.plot = {
                 })
                 .classed("tv-ctx-line", true);
             var f4 = f3.append("path")
-                .attr("d", d3.svg.line()
+                .attr("d", d3.line()
                     .x(function (d, i) {
                         var time_start = f.sc_ctx_x.domain()[0];
                         return f.sc_ctx_x((time_start + i + 0.5) * f.da_x_dt);
@@ -899,7 +902,7 @@ tv.plot = {
                 .append("g").attr("transform", "translate(0, " + f.sz_ctx_x.y / 2 + ") scale(1, 0.5)")
                 .classed("tv-ctx-error", true)
                 .append("path")
-                .attr("d", d3.svg.line()
+                .attr("d", d3.line()
                     .x(function (d, i) {
                         var idx = (i < da_x_len) ? i : (2 * da_x_len - i);
                         var time_start = f.sc_ctx_x.domain()[0];
@@ -918,7 +921,7 @@ tv.plot = {
             })
                 .classed("tv-ctx-line", true)
                 .append("path")
-                .attr("d", d3.svg.line().x(function (d, i) {
+                .attr("d", d3.line().x(function (d, i) {
                     return 2 + (f.sz_ctx_y.x - 2) * i / f.sz_ctx_y.x;
                 })
                     .y(function (d) {
@@ -947,11 +950,27 @@ tv.plot = {
 
             // horizontal context brush
             var br_ctx_x_fn = function () {
-                    var dom = f.br_ctx_x.empty() ? f.sc_ctx_x.domain() : f.br_ctx_x.extent()
+                    //Check if the event is invoked by itself or by the focus brush
+                    var event_selection = [];
+                    // Different extent when it is:
+                    //1.from the brush of 2D Focus Brush
+                    if (d3.event.selection != null && d3.event.selection[0][0] != null) {
+                        event_selection[0] = d3.event.selection[0][0];
+                        event_selection[1] = d3.event.selection[1][0];
+                    }
+                    //2.from the end of focus brush
+                    else if (d3.event.selection == null) {
+                        event_selection = [f.sc_ctx_x.range()[0], f.sc_ctx_x.range()[1]];
+                    }
+
+                    //3.from itself
+                    else {
+                        event_selection = d3.event.selection;
+                    }
+                    var dom = f.br_ctx_x === null ? f.sc_ctx_x.domain() : event_selection
                         , sc = f.sc_fcs_x
                         , x_scaling = f.sc_ctx_x.domain()[1] / (dom[1] - dom[0]);
-
-                    sc.domain(dom);
+                    sc.domain(dom.map(f.sc_ctx_x.invert, f.sc_ctx_x));
                     f.gp_ax_fcs_x.call(f.ax_fcs_x);
                     // TODO: This seems to cause problems with negative values and commenting it out does not seem to
                     // cause any additional problems. This could do with some double checking.
@@ -960,13 +979,29 @@ tv.plot = {
 
                 // vertical context brush
                 , br_ctx_y_fn = function () {
-                    var dom = f.br_ctx_y.empty() ? f.sc_ctx_y.domain() : f.br_ctx_y.extent();
+
+                    var event_selection = [];
+                    if (d3.event.selection != null && d3.event.selection[0][0] != null) {
+                        event_selection[0] = d3.event.selection[0][1];
+                        event_selection[1] = d3.event.selection[1][1];
+                    }
+                    else if (d3.event.selection == null) {
+                        event_selection = [0,f.sz_ctx_y.y];
+                    }
+                    else {
+                        event_selection = d3.event.selection;
+
+                    }
+
+
+                    var dom = f.br_ctx_y === null ? f.sc_ctx_y.domain() : event_selection;
                     var yscl = f.sz_fcs.y / (dom[1] - dom[0]) / 5;
-                    f.sc_fcs_y.domain(dom);
+                    f.sc_fcs_y.domain(dom.map(f.sc_ctx_y.invert, f.sc_ctx_y)).range([0, f.sz_ctx_y.y,]);
                     f.gp_ax_fcs_y.call(f.ax_fcs_y);
                     f.gp_lines.selectAll("g").attr("transform", function (d, i) {
                         return "translate(0, " + f.sc_fcs_y(i) + ")" + "scale (1, " + yscl + ")"
                     }).selectAll("path").attr("stroke-width", "" + (3 / yscl));
+                    f.scale_focus_stroke();
                 }
 
                 , br_ctx_end = function () {
@@ -978,7 +1013,7 @@ tv.plot = {
                     // to be tested further to see if it was really needed, and if so look into the problem of zooming
                     // described above.
 
-                   // f.render();
+                    // f.render();
                 };
 
             f.br_ctx_y_fn = br_ctx_y_fn;
@@ -986,11 +1021,12 @@ tv.plot = {
             // on end of focus brush
             // this is on f so that f can call it when everything else is done..
             f.br_fcs_endfn = function (no_render) {
-
+                if (!d3.event || !d3.event.sourceEvent) return;
                 br_ctx_x_fn();
                 br_ctx_y_fn();
-                f.scale_focus_stroke();
-                f.gp_br_fcs.call(f.br_fcs.clear());
+                f.gp_br_fcs.node().__brush.selection = null;
+                f.gp_br_fcs.call(f.br_fcs);
+
 
                 if (!no_render) {
                     // TODO: This f.render() only makes another call to the server bringing back data that is already here.
@@ -1003,25 +1039,25 @@ tv.plot = {
                     //f.render();
                 }
             };
-
             // focus brush
             f.br_fcs_brush = function () {
-                var ex = f.br_fcs.extent();
-                f.br_ctx_x.extent([ex[0][0], ex[1][0]]);
-                f.br_ctx_y.extent([ex[0][1], ex[1][1]]);
+                var ex = d3.event.selection;
                 f.gp_br_ctx_y.call(f.br_ctx_y);
                 f.gp_br_ctx_x.call(f.br_ctx_x);
+                //assign directly because can't use brushSelection to set null brushes' extent
+                f.gp_br_ctx_y.node().__brush.selection = [[0, ex[0][1]], [f.sz_ctx_y.x, ex[1][1]]];
+                f.gp_br_ctx_x.node().__brush.selection = [[ex[0][0], 0], [ex[1][0], f.sz_ctx_x.y]];
+
             };
 
             // create brushes
-            f.br_ctx_x = d3.svg.brush().x(f.sc_ctx_x).on("brush", br_ctx_x_fn)
-                .on("brushend", br_ctx_end);
+            f.br_ctx_x = d3.brushX().extent([[f.sc_ctx_x.range()[0], 0], [f.sc_ctx_x.range()[1], f.sz_ctx_x.y]]).on("brush", br_ctx_x_fn)
+                .on("end", br_ctx_end);
 
-            f.br_ctx_y = d3.svg.brush().y(f.sc_ctx_y).on("brush", br_ctx_y_fn)
-                .on("brushend", br_ctx_end);
+            f.br_ctx_y = d3.brushY().extent([[0, 0], [f.sz_ctx_y.x,f.sz_ctx_y.y]]).on("brush", br_ctx_y_fn)
+                .on("end", br_ctx_end);
 
-            f.br_fcs = d3.svg.brush().x(f.sc_fcs_x)
-                .y(f.sc_fcs_y).on("brushend", f.br_fcs_endfn)
+            f.br_fcs = d3.brush().extent([[f.sc_fcs_x.range()[0], 0], [f.sc_fcs_x.range()[1], f.sz_fcs.y]]).on("end", f.br_fcs_endfn)
                 .on("brush", f.br_fcs_brush);
 
             // add brush groups and add brushes to them
@@ -1086,7 +1122,7 @@ tv.plot = {
             for (var i = 0; i < nkeep; i++) {
                 vt_data[i] = [];
                 for (var j = 0; j < n; j++) {
-                    vt_data[i][j] = [j * w / 2.25 / n, ( 2 * h / 3 / nkeep / 2 / vt_scl) * cs.data[i * n + j]];
+                    vt_data[i][j] = [j * w / 2.25 / n, (2 * h / 3 / nkeep / 2 / vt_scl) * cs.data[i * n + j]];
                 }
             }
 
