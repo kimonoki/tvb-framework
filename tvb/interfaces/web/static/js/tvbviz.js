@@ -531,6 +531,7 @@ tv.plot = {
         return f;
     },
 
+//time_series is using d3v4
     time_series: function () {
 
         var f = function (root) {
@@ -850,7 +851,7 @@ tv.plot = {
                 f.line_paths = g.enter()
                     .append("g")
                     .attr("transform", function (d, i) {
-                        return "translate(0, " + f.sc_fcs_y(i) + ")scale(1,3)";
+                        return "translate(0, " + f.sc_fcs_y(i) + ")";
                     })
                     .append("path")
                     .attr("vector-effect", "non-scaling-stroke");
@@ -950,7 +951,7 @@ tv.plot = {
 
             // horizontal context brush
             var br_ctx_x_fn = function () {
-                    //Check if the event is invoked by itself or by the focus brush
+
                     var event_selection = [];
                     // Different extent when it is:
                     //1.from the brush of 2D Focus Brush
@@ -967,10 +968,12 @@ tv.plot = {
                     else {
                         event_selection = d3.event.selection;
                     }
+                    //selection is now in coordinates so we have to map it using scales
+                    event_selection = event_selection.map(f.sc_ctx_x.invert, f.sc_ctx_x);
                     var dom = f.br_ctx_x === null ? f.sc_ctx_x.domain() : event_selection
                         , sc = f.sc_fcs_x
                         , x_scaling = f.sc_ctx_x.domain()[1] / (dom[1] - dom[0]);
-                    sc.domain(dom.map(f.sc_ctx_x.invert, f.sc_ctx_x));
+                    sc.domain(dom);
                     f.gp_ax_fcs_x.call(f.ax_fcs_x);
                     // TODO: This seems to cause problems with negative values and commenting it out does not seem to
                     // cause any additional problems. This could do with some double checking.
@@ -982,21 +985,21 @@ tv.plot = {
 
                     var event_selection = [];
                     if (d3.event.selection != null && d3.event.selection[0][0] != null) {
-                        event_selection[0] = d3.event.selection[0][1];
-                        event_selection[1] = d3.event.selection[1][1];
+                        event_selection[1] = d3.event.selection[0][1];
+                        event_selection[0] = d3.event.selection[1][1];
                     }
                     else if (d3.event.selection == null) {
-                        event_selection = [0,f.sz_ctx_y.y];
+                        event_selection = f.sc_ctx_y.range();
                     }
                     else {
-                        event_selection = d3.event.selection;
-
+                        event_selection[0] = d3.event.selection[1];
+                        event_selection[1] = d3.event.selection[0];
                     }
-
-
+                    event_selection = event_selection.map(f.sc_ctx_y.invert, f.sc_ctx_y);
                     var dom = f.br_ctx_y === null ? f.sc_ctx_y.domain() : event_selection;
                     var yscl = f.sz_fcs.y / (dom[1] - dom[0]) / 5;
-                    f.sc_fcs_y.domain(dom.map(f.sc_ctx_y.invert, f.sc_ctx_y)).range([0, f.sz_ctx_y.y,]);
+                    //reverse because the coordinates are not following scales
+                    f.sc_fcs_y.domain(dom).range([f.sz_ctx_y.y, 0]);
                     f.gp_ax_fcs_y.call(f.ax_fcs_y);
                     f.gp_lines.selectAll("g").attr("transform", function (d, i) {
                         return "translate(0, " + f.sc_fcs_y(i) + ")" + "scale (1, " + yscl + ")"
@@ -1024,6 +1027,8 @@ tv.plot = {
                 if (!d3.event || !d3.event.sourceEvent) return;
                 br_ctx_x_fn();
                 br_ctx_y_fn();
+                f.scale_focus_stroke();
+                //better to use brushSelection
                 f.gp_br_fcs.node().__brush.selection = null;
                 f.gp_br_fcs.call(f.br_fcs);
 
@@ -1064,7 +1069,6 @@ tv.plot = {
             f.gp_br_ctx_y = f.gp_ctx_y.append("g");
             f.gp_br_ctx_x = f.gp_ctx_x.append("g");
             f.gp_br_fcs = f.gp_fcs.append("g").classed("brush", true).call(f.br_fcs);
-
             f.gp_br_ctx_y.append("g").classed("brush", true).call(f.br_ctx_y).selectAll("rect").attr("width", f.sz_ctx_y.x);
             f.gp_br_ctx_x.append("g").classed("brush", true).call(f.br_ctx_x).selectAll("rect").attr("height", f.sz_ctx_x.y);
         };

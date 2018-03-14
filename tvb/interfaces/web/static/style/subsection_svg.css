@@ -37,6 +37,10 @@
 .matrix-text { font-size: medium; font-family: "Helvetica", "Arial", sans-serif;}
 .node-labels { font-size: small; font-family: "Helvetica", "Arial", sans-serif; }
 
+/*universal html font styling not working while using d3v4 in the timeserires viewer*/
+text{
+    font-size:small;
+}
 /* added while developing time series visualizer */
 .tv-fig-bg { fill: #ddd }
 .tv-data-bg { fill: white }
