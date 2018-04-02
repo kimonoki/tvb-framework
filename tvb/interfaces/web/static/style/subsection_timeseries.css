@@ -17,6 +17,11 @@
  *
  **/
 
+/*!*overlay changed in d3v4*!*/
+.overlay{
+    visibility: hidden;
+}
+
 .timeseries-display {
     width: 100%;
 }
