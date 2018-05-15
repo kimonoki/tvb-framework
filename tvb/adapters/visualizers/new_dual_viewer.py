@@ -108,9 +108,10 @@ class NewDualViewer(BrainViewer):
         params.update(EegMonitor().compute_parameters(time_series, is_extended_view=True))
 
         params['isOneToOneMapping'] = False
-        params['brainViewerTemplate'] = 'view.html'
+        params['brainViewerTemplate'] = 'dual_brain_3d_view.html'
 
         if isinstance(time_series, TimeSeriesSEEG):
+            params['brainViewerTemplate'] = "dual_brain_3d_internal_view.html"
             # Mark as None since we only display shelf face and no point to load these as well
             params['urlVertices'] = None
             params['isSEEG'] = True
