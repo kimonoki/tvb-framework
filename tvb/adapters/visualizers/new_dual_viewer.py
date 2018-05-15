@@ -111,7 +111,6 @@ class NewDualViewer(BrainViewer):
         params['brainViewerTemplate'] = 'view.html'
 
         if isinstance(time_series, TimeSeriesSEEG):
-            params['brainViewerTemplate'] = "internal_view.html"
             # Mark as None since we only display shelf face and no point to load these as well
             params['urlVertices'] = None
             params['isSEEG'] = True
