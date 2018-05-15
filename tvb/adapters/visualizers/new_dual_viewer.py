@@ -117,5 +117,5 @@ class NewDualViewer(BrainViewer):
             params['isSEEG'] = True
 
         return self.build_display_result("new_dual_brain/view", params,
-                                         pages=dict(controlPage="brain/extendedcontrols",
+                                         pages=dict(controlPage="new_dual_brain/controls",
                                                     channelsPage="commons/channel_selector.html"))
