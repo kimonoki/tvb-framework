@@ -246,7 +246,7 @@ class WebStructure(object):
         SUB_SECTION_VIEW_23: "wavelet-spectrogram-visualizer",
         SUB_SECTION_VIEW_24: "annotations-visualizer",
         SUB_SECTION_VIEW_25: "matrix-visualizer",
-        SUB_SECTION_VIEW_26: "brain_dual"
+        SUB_SECTION_VIEW_26: "new-brain-dual-visualiser"
     }
 
 
