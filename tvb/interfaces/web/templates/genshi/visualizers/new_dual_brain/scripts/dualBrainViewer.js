@@ -99,27 +99,13 @@ var lbl_x_width = 100;
 var lbl_x_height = 30;
 var zoom_range = [0.1, 20];
 
-var AG_defaultXaxis = {zoomRange: zoom_range, labelWidth: lbl_x_width, labelHeight: lbl_x_height};
-var AG_defaultYaxis = {show: false, zoomRange: zoom_range, labelWidth: 200, labelHeight: 30};
 
 // the index of the cached file (the file that was loaded asynchronous)
 var cachedFileIndex = 0;
-var labelX = "";
-var chartTitle = "";
 //The displayed labels for the graph
 var chanDisplayLabels = [];
 // setup plot
 var AG_options = {
-    series: {
-        shadowSize: 0,
-        color: 'blue'
-    }, // drawing is faster without shadows
-    lines: {
-        lineWidth: 1,
-        show: true
-    },
-    yaxis: AG_defaultYaxis,
-    xaxis: AG_defaultXaxis,
     grid: {
         backgroundColor: 'white',
         hoverable: true,
@@ -137,9 +123,6 @@ var AG_options = {
     },
     legend: {
         show: false
-    },
-    hooks: {
-        processRawData: [processRawDataHook]
     }
 };
 
@@ -176,23 +159,10 @@ var AG_regionSelector = null;
 // State mode selector. Used as a global only in dual view
 var AG_modeSelector = null;
 
-function resizeToFillParent() {
-    const canvas = $('#EEGcanvasDiv');
-    let container, width, height;
 
-    if (!isSmallPreview) {
-        // Just use parent section width and height. For width remove some space for the labels to avoid scrolls
-        // For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
-        container = canvas.parent();
-        width = container.width() - 40;
-        height = container.height() - 80;
-    } else {
-        container = $('body');
-        width = container.width() - 40;
-        height = container.height() - 20;
-    }
-    canvas.width(width).height(height);
-}
+// GID for the D3 viewer
+var filterGid = null;
+
 
 window.onresize = function () {
     resizeToFillParent();
@@ -211,11 +181,7 @@ function AG_startAnimatedChart(ag_settings) {
     drawSliderForAnimationSpeed();
     _AG_init_selection(ag_settings.measurePointsSelectionGIDs);
 
-    bindHoverEvent();
-    initializeCanvasEvents();
-    if (!ag_settings.extended_view) {
-        bindZoomEvent();
-    }
+
 }
 
 function AG_startAnimatedChartPreview(ag_settings) {
@@ -267,6 +233,7 @@ function _AG_initGlobals(ag_settings) {
     totalTimeLength = ag_settings.totalLength;
     nanValueFound = ag_settings.nan_value_found;
     AG_computedStep = ag_settings.translationStep;
+
 }
 
 /**
@@ -286,7 +253,7 @@ function _AG_initPaginationState(number_of_visible_points) {
  * @private
  */
 function _AG_preStart() {
-    resizeToFillParent();
+    // resizeToFillParent();
 }
 
 /**
@@ -299,6 +266,8 @@ function _AG_preStart() {
 function _AG_init_selection(filterGids) {
     let i;
     let selectors = [];
+
+    filterGid = filterGids;
 
     /**
      * Returns the selected channel indices as interpreted by AG_submitableSelectedChannels
@@ -375,18 +344,8 @@ function _AG_get_speed(defaultSpeed) {
     return speed;
 }
 
-/*
- * Create FLOT specific options dictionary for the y axis, with correct labels and positioning for
- * all channels. Then store these values in 'AG_homeViewYValues' so they can be used in case of a
- * 'Home' action in a series of zoom events.
- */
-function AG_createYAxisDictionary(nr_channels) {
-
-}
-
 function refreshChannels() {
     submitSelectedChannels(false);
-    // drawGraph(false, noOfShiftedPoints);
 }
 
 function _AG_changeMode(tsIndex, val) {
@@ -397,6 +356,12 @@ function _AG_changeMode(tsIndex, val) {
 function _AG_changeStateVariable(tsIndex, val) {
     tsStates[tsIndex] = parseInt(val);
     refreshChannels();
+}
+
+
+//this function is used in virtualBrain.js keep it for now
+function drawGraph() {
+
 }
 
 function _AG_getSelectedDataAndLongestChannelIndex(data) {
@@ -472,26 +437,72 @@ function submitSelectedChannels(isEndOfData) {
         displayMessage('The given data contains some NaN values. All the NaN values were replaced by zero.', 'warningMessage');
     }
 
-    // draw the first 'AG_numberOfVisiblePoints' points
-    // redrawCurrentView();
-    if (!isSmallPreview) {
-        AG_translationStep = $('#ctrl-input-spacing').slider("option", "value") / 4;
-        AG_scaling = $("#ctrl-input-scale").slider("value");
-    } else {
-        AG_translationStep = 1;
+
+    //TODO find why it's 1 and don't use hardcoded numbers here
+    var dataShape = [AG_time.length, 1, AG_submitableSelectedChannels.length, 1];
+    var selectedLabels = []
+    for (let i = 0; i < AG_submitableSelectedChannels.length; i++) {
+        selectedLabels.push([chanDisplayLabels[displayedChannels[i]]]);
     }
 
-    AG_createYAxisDictionary(AG_noOfLines);
-    // redrawPlot([]);
-    resetToDefaultView();
-    if (AG_isStopped) {
-        // AG_isStopped = false;
-        // drawGraph(false, noOfShiftedPoints);
-        AG_isStopped = true;
-    } else {
-        // drawGraph(false, noOfShiftedPoints);
-    }
+
+    ts = tv.plot.time_series();
+    ts.baseURL(baseDataURLS[0]).preview(false).mode(0).state_var(0);
+    ts.shape(dataShape).t0(AG_time[1] / 2).dt(AG_time[1]);
+    ts.labels(selectedLabels);
+    ts.channels(AG_submitableSelectedChannels);
+
+
+    resizeToFillParent(ts);
+    $('#time-series-viewer').empty();
+    ts(d3.select("#time-series-viewer"));
+    tsView = ts;
+
+    // This is arbitrarily set to a value. To be consistent with tsview we rescale relative to this value
+    _initial_magic_fcs_amp_scl = tsView.magic_fcs_amp_scl;
+
+    $("#ctrl-input-scale").slider({
+        value: 50, min: 0, max: 100,
+        slide: function (event, target) {
+            _updateScalingFromSlider(target.value);
+        }
+    });
+
 }
+
+var ts = null;
+
+function resizeToFillParent(ts) {
+    var container, width, height;
+
+    container = $('#eegSectionId').parent();
+    width = container.width();
+
+    //minus toolbar's height
+    height = container.height() - 60;
+
+    ts.w(width).h(height);
+
+}
+
+function _updateScalingFromSlider(value) {
+    if (value == null) {
+        value = $("#ctrl-input-scale").slider("value");
+    }
+    var expo_scale = (value - 50) / 50; // [1 .. -1]
+    var scale = Math.pow(10, expo_scale * 4); // [1000..-1000]
+    tsView.magic_fcs_amp_scl = _initial_magic_fcs_amp_scl * scale;
+    tsView.prepare_data();
+    tsView.render_focus();
+
+    if (scale >= 1) {
+        $("#display-scale").html("1 * " + scale.toFixed(2));
+    } else {
+        $("#display-scale").html("1 / " + (1 / scale).toFixed(2));
+    }
+
+}
+
 
 /**
  * This method decides if we are at the beginning or end of the graph, in which case we only need
@@ -534,67 +545,6 @@ function generateChannelColors(nr_of_channels) {
         AG_channelColorsDict[color] = i;
         AG_reversedChannelColorsDict[i] = color;
     }
-}
-
-/*
- * Get y-axis labels and update colors to correspond to each channel
- */
-function setLabelColors() {
-    const labels = $('.flot-y-axis .tickLabel');
-    for (let i = 0; i < labels.length; i++) {
-        const chan_idx = chanDisplayLabels.indexOf(labels[i].firstChild.textContent);
-        if (chan_idx >= 0) {
-            labels[i].style.color = AG_reversedChannelColorsDict[displayedChannels.indexOf(chan_idx)];
-            labels[i].style.left = 80 + (i % 2) * 40 + 'px';
-        }
-    }
-}
-
-/*
- * This method draw the actual plot. The 'executeShift' parameter decides if a shift is
- * to be done, or just use the previous data points. 'shiftNo' decides the number of points
- * that will be shifted.
- */
-function drawGraph(executeShift, shiftNo) {
-
-}
-
-/*
- * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
- */
-function redrawPlot(data) {
-    // const target = $('#EEGcanvasDiv');
-    // const resizerChildren = target.children('.ui-resizable-handle');
-    // for (let i = 0; i < resizerChildren.length; i++) {
-    //     target[0].removeChild(resizerChildren[i]);
-    // }
-    // plot = $.plot(target, data, $.extend(true, {}, AG_options));
-    // for (let j = 0; j < resizerChildren.length; j++) {
-    //     target[0].appendChild(resizerChildren[j]);
-    // }
-    // setLabelColors();
-}
-
-
-/**
- * This hook will be called before Flot copies and normalizes the raw data for the given
- * series. If the function fills in datapoints.points with normalized
- * points and sets datapoints.pointsize to the size of the points,
- * Flot will skip the copying/normalization step for this series.
- */
-function processRawDataHook(plot, series, data, datapoints) {
-    datapoints.format = [
-        {x: true, number: true, required: true},
-        {y: true, number: true, required: true}
-    ];
-    datapoints.pointsize = 2;
-
-    for (let i = 0; i < data.length; i++) {
-        datapoints.points.push(data[i][0]);
-        datapoints.points.push(data[i][1]);
-    }
-
-    series.xaxis.used = series.yaxis.used = true;
 }
 
 
@@ -992,45 +942,7 @@ function getDisplayedChannels(listOfAllChannels, offset) {
 }
 
 
-
-// below is originally in eeg/graph_events
-
-/*
-* Handle zooming speed and scale related settings for animated graph.
-**/
-//The zoom stack used for keeping track of zoom events for the 'back' option
-var zoomStack = [];
-//Previously point when displaying info on mouse hover
-var previousPoint = null;
-
-function initializeCanvasEvents() {
-    // Prepare functions for Export Canvas as Image
-
-
-}
-
-
 //------------------------------------------------START ZOOM RELATED CODE--------------------------------------------------------
-function bindZoomEvent() {
-    /*
-     * On a zoom event, retain the x and y axis values in a stack, for the 'Back' zoom possibility.
-     */
-    $("#EEGcanvasDiv").bind('plotzoom', function (event, plot) {
-        var axes = plot.getAxes();
-        AG_isSpeedZero = true;
-    });
-
-    $("#EEGcanvasDiv").bind('plotselected', function (event, ranges) {
-        zoomStack.push([AG_options['xaxis']['min'], AG_options['xaxis']['max'], AG_options['yaxis']['min'], AG_options['yaxis']['max']]);
-        AG_options['xaxis'] = { min: ranges.xaxis.from, max: ranges.xaxis.to };
-        AG_defaultYaxis['min'] = ranges.yaxis.from;
-        AG_defaultYaxis['max'] = ranges.yaxis.to;
-        //AG_options['yaxis'] = { min: ranges.yaxis.from, max: ranges.yaxis.to }
-        AG_isSpeedZero = true;
-        // redrawPlot(plot.getData());
-    });
-}
-
 function stopAnimation() {
     AG_isStopped = !AG_isStopped;
     var btn = $("#ctrl-action-pause");
@@ -1041,65 +953,15 @@ function stopAnimation() {
         btn.html("Pause");
         btn.attr("class", "action action-controller-pause");
     }
-    if (!AG_isStopped) {
-        // drawGraph(true, noOfShiftedPoints);
-    }
+
 }
 
-function resetToDefaultView() {
-    /*
-     * When resetting to default view, clear all the data from the zoom stack
-     * and set the home values for x and y values.
-     */
-    AG_options.xaxis = AG_homeViewXValues;
-    zoomStack = [];
-    AG_defaultYaxis.min = AG_homeViewYValues[0];
-    AG_defaultYaxis.max = AG_homeViewYValues[1];
-    // redrawPlot(plot.getData());
-    if (!isSmallPreview ) {
-        if ($("#ctrl-input-speed").slider("option", "value") != 0) {
-            AG_isSpeedZero = false;
-        }
-   }
-}
-
-
-function zoomBack() {
-    /*
-     * Pop the last entry from the zoom stack and redraw with those option.
-     */
-    if (zoomStack.length > 1) {
-        var previousValues = zoomStack.pop();
-        AG_options['xaxis'] = {min: previousValues[0], max: previousValues[1]};
-        AG_defaultYaxis['min'] = previousValues[2];
-        AG_defaultYaxis['max'] = previousValues[3];
-        // redrawPlot(plot.getData());
-    } else {
-        resetToDefaultView()
-    }
-}
-
-//------------------------------------------------END ZOOM RELATED CODE--------------------------------------------------------
 
 //------------------------------------------------START SCALE RELATED CODE--------------------------------------------------------
-/**
- * If we change the AG_translationStep then we have to redraw the current view using the new value of the AG_translationStep
- */
-function redrawCurrentView() {
-    // var diff = AG_currentIndex - AG_numberOfVisiblePoints;
-    // for (var k = 0; k < AG_numberOfVisiblePoints; k++) {
-    //     AG_displayedTimes[k] = AG_time[k + diff];
-    //     for (var i = 0; i < AG_noOfLines; i++) {
-    //         AG_displayedPoints[i][k] = [AG_time[k + diff], AG_addTranslationStep(AG_allPoints[i][k + diff], i)];
-    //     }
-    // }
-    // AG_createYAxisDictionary(AG_noOfLines);
-    // redrawPlot([]);
-}
 
 
 function drawSliderForScale() {
-    function _onchange(){
+    function _onchange() {
         /** When scaling, we need to redraw the graph and update the HTML with the new values.
          */
         var spacing = $("#ctrl-input-spacing").slider("value") / 4;
@@ -1114,103 +976,22 @@ function drawSliderForScale() {
         for (var i = 0; i < AG_noOfLines; i++) {
             AG_displayedPoints.push([]);
         }
-        resetToDefaultView();
-        _updateScaleFactor(spacing, scale);
+        _updateScaleFactor(scale);
     }
 
-    $("#ctrl-input-spacing").slider({ value: 4, min: 0, max: 8, change: _onchange});
-    $("#ctrl-input-scale").slider({ value: 1, min: 1, max: 32, change: _onchange});
+    $("#ctrl-input-scale").slider({value: 1, min: 1, max: 32, change: _onchange});
 
-    $("#display-spacing").html("" + AG_translationStep + '*' +AG_computedStep.toFixed(2));
     $("#display-scale").html("" + AG_scaling);
 }
 
-
-function _updateScaleFactor(spacing, scale) {
-    AG_translationStep = spacing;
+function _updateScaleFactor(scale) {
     AG_scaling = scale;
-    $("#display-spacing").html("" + AG_translationStep + '*' +AG_computedStep.toFixed(2));
     $("#display-scale").html("" + AG_scaling);
-    // redrawCurrentView();
-    if (AG_isStopped) {
-        refreshChart();
-    }
 }
 
 //------------------------------------------------END SCALE RELATED CODE--------------------------------------------------------
 
-//------------------------------------------------START HOVER RELATED CODE--------------------------------------------------------
-
-function bindHoverEvent() {
-        $("#EEGcanvasDiv").bind("plothover", function (event, pos, item) {
-        /*
-         * When hovering over plot, if an item (FLOT point) is hovered over, then find the channel of that point
-         * by means of using the number of AG_translationStep * AG_computedStep intervals from the first channel.
-         * Then using this and the apporximate of the time value, get the actual data value from the AG_allPoints array.
-         */
-        if (item) {
-            var timeValue = pos.x.toFixed(4);
-            var dataValue = pos.y.toFixed(4);
-            var rowIndex = AG_channelColorsDict[item.series.color];
-            if (rowIndex == undefined) {
-                $("#info-channel").html(' None');
-                $("#info-time").html(" 0");
-                $("#info-value").html(" 0");
-                $("#tooltip").remove();
-                previousPoint = null;
-                return;
-            }
-            var startTime = AG_time.indexOf(AG_displayedPoints[0][0][0]);
-            dataValue = AG_allPoints[rowIndex][startTime + (parseInt((timeValue - AG_displayedPoints[0][0][0]) / (AG_displayedPoints[0][1][0] - AG_displayedPoints[0][0][0])))];
-            $("#info-channel").html(' ' + chanDisplayLabels[displayedChannels[rowIndex]]);
-            $("#info-time").html(" " + timeValue);
-            $("#info-value").html(" " + dataValue);
-
-            if (previousPoint != item.dataIndex || dataValue != undefined) {
-                previousPoint = item.dataIndex;
-
-                $("#tooltip").remove();
-                var x = item.datapoint[0].toFixed(2),
-                    y = item.datapoint[1].toFixed(2);
-                showTooltip(item.pageX, item.pageY,
-                            "Time: " + timeValue + ", Value: " + dataValue);
-            }
-        } else {
-            $("#info-channel").html(' None');
-            $("#info-time").html(" 0");
-            $("#info-value").html(" 0");
-            $("#tooltip").remove();
-            previousPoint = null;
-        }
-    });
-}
-
-function showTooltip(x, y, contents) {
-    /*
-     * A tooltip to display information about a specific point on 'mouse over'.
-     */
-    $('<div id="tooltip">' + contents + '</div>').css( {
-        position: 'absolute',
-        display: 'none',
-        top: y + 5,
-        left: x + 5,
-        border: '1px solid #fdd',
-        padding: '2px',
-        'background-color': '#fee',
-        opacity: 0.80
-    }).appendTo("body").fadeIn(200);
-}
-//------------------------------------------------END HOVER RELATED CODE--------------------------------------------------------
-
 //------------------------------------------------START SPEED RELATED CODE--------------------------------------------------------
-/**
- * The method should be used when the animated chart is stopped. Draw graph without shifting.
- */
-function refreshChart() {
-    AG_isStopped = false;
-    // drawGraph(false, noOfShiftedPoints);
-    AG_isStopped = true;
-}
 
 function drawSliderForAnimationSpeed() {
     $("#ctrl-input-speed").slider({
@@ -1218,8 +999,7 @@ function drawSliderForAnimationSpeed() {
         value: 3,
         min: -50,
         max: 50,
-        change: function(event, ui) {
-            resetToDefaultView();
+        change: function (event, ui) {
             updateSpeedFactor();
         }
     });
@@ -1228,7 +1008,7 @@ function drawSliderForAnimationSpeed() {
 
 function updateSpeedFactor() {
     var speed = $("#ctrl-input-speed").slider("option", "value");
-    $('#display-speed').html(''+ speed);
+    $('#display-speed').html('' + speed);
     AG_isSpeedZero = (speed == 0);
 }
 

@@ -17,16 +17,17 @@
     <!--!
         These functions depend on globals created by the brain and the eeg viewer
         They do some synchronisation between the viewers.
+        Update channels
     -->
     <script type="text/javascript" py:if="not defined('isSEEG')">
-        $(document).ready(function(){
+        $(document).ready(function () {
             EX_initializeChannels();
         });
     </script>
     <script type="text/javascript" py:if="defined('isSEEG')">
-        $(document).ready(function(){
+        $(document).ready(function () {
             EX_initializeChannelsForSensorsInternal();
         });
-   </script>
+    </script>
 
 </div>
