@@ -442,27 +442,26 @@ tv.plot = {
                 if (!(f.gp_br_fcs.node().__brush === null)) {
                     var dx = dr ? 1 : -1;
                     // stop scrolling if it is the end of the signals' list
-                    if (f.y_dom[0] >= -1 && f.y_dom[1] <= f.channels().length) {
-                        f.y_dom[0] += dx;
-                        f.y_dom[1] += dx;
+                    if (f.dom_y[0] >= -1 && f.dom_y[1] <= f.channels().length) {
+                        f.dom_y[0] += dx;
+                        f.dom_y[1] += dx;
                     }
                     //lower bound
-                    else if (f.y_dom[0] < -1) {
+                    else if (f.dom_y[0] < -1) {
                         var delta = Math.abs(f.y_dom[0] - (-1));
-                        f.y_dom[0] += delta;
-                        f.y_dom[1] += delta;
+                        f.dom_y[0] += delta;
+                        f.dom_y[1] += delta;
                     }
                     //upper bound
-                    else if (f.y_dom[1] > f.channels().length) {
+                    else if (f.dom_y[1] > f.channels().length) {
                         var delta = Math.abs(f.channels().length - f.y_dom[1]);
-                        f.y_dom[0] -= delta;
-                        f.y_dom[1] -= delta;
+                        f.dom_y[0] -= delta;
+                        f.dom_y[1] -= delta;
                     }
 
                     //redraw the lines
-                    var dom = f.y_dom;
+                    var dom = f.dom_y;
                     var yscl = f.sz_fcs.y / (dom[1] - dom[0]) / 5;
-                    console.log(dom);
                     f.sc_fcs_y.domain(dom).range([f.sz_ctx_y.y, 0]);
                     f.gp_ax_fcs_y.call(f.ax_fcs_y);
                     f.gp_lines.selectAll("g").attr("transform", function (d, i) {
@@ -682,6 +681,8 @@ tv.plot = {
                 f.gp_lines.selectAll("g").selectAll("path").attr("stroke-width", "1px");//4*Math.sqrt(Math.abs(area / area2)))
             }
         };
+
+
 
         f.add_brushes = function () {
 
