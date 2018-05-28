@@ -448,13 +448,13 @@ tv.plot = {
                     }
                     //lower bound
                     else if (f.dom_y[0] < -1) {
-                        var delta = Math.abs(f.y_dom[0] - (-1));
+                        var delta = Math.abs(f.dom_y[0] - (-1));
                         f.dom_y[0] += delta;
                         f.dom_y[1] += delta;
                     }
                     //upper bound
                     else if (f.dom_y[1] > f.channels().length) {
-                        var delta = Math.abs(f.channels().length - f.y_dom[1]);
+                        var delta = Math.abs(f.channels().length - f.dom_y[1]);
                         f.dom_y[0] -= delta;
                         f.dom_y[1] -= delta;
                     }
@@ -683,7 +683,6 @@ tv.plot = {
         };
 
 
-
         f.add_brushes = function () {
 
             // horizontal context brush
@@ -765,6 +764,7 @@ tv.plot = {
                 };
 
             f.br_ctx_y_fn = br_ctx_y_fn;
+
             br_ctx_end = function () {
 
                 //get the selected time range
@@ -785,7 +785,9 @@ tv.plot = {
                 if (d3.event.selection != null) {
                     //display the selected time range
                     f.text = f.gp_ctx_x.append("text").attr("class", "selected-time")
-                        .text("Selected Time Range  " + event_selection_x[0] + "    " + event_selection_x[1])
+                        .text("Selected Time Range: " + event_selection_x[0].toFixed(2) + "ms" + " to  " + event_selection_x[1].toFixed(2) + "ms" +
+                            " Interval:" + (event_selection_x[1] - event_selection_x[0]).toFixed(2));
+
 
                     //update the time in the input tag
                     d3.select("#TimeNow").property('value', event_selection_x[0].toFixed(2));
