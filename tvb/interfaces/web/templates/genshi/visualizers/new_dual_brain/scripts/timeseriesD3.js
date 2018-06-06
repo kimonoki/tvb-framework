@@ -776,31 +776,14 @@ tv.plot = {
                 var scale_brushed = d3.scaleLinear().domain(f.dom_x).range(f.sc_ctx_x.range());
                 event_selection_x = event_selection_x.map(scale_brushed.invert, scale_brushed);
                 dom = f.br_ctx_x === null ? f.sc_ctx_x.domain() : event_selection_x;
-
+                timeselection = event_selection_x;
                 // remove the last time's selection
-                f.gp_ctx_x.select(".selected-time").remove();
+                f.gp_ctx_x.selectAll(".selected-time").remove();
 
 
                 //change the actual time point in the slider
                 if (d3.event.selection != null) {
-                    //display the selected time range
-                    f.text = f.gp_ctx_x.append("text").attr("class", "selected-time")
-                        .text("Selected Time Range: " + event_selection_x[0].toFixed(2) + "ms" + " to  " + event_selection_x[1].toFixed(2) + "ms" +
-                            " Interval:" + (event_selection_x[1] - event_selection_x[0]).toFixed(2));
-
-
-                    //update the time in the input tag
-                    d3.select("#TimeNow").property('value', event_selection_x[0].toFixed(2));
-
-                    //update the time in the 3d viewer's time
-                    $('#slider').slider('value', event_selection_x[0].toFixed(2));
-                    loadFromTimeStep(parseInt(event_selection_x[0]));
-
-                    //need a function to test the slider value
-                    // scyncing betweet the 2D tiem selection and 3D movie
-                    if ($('#slider').slider("option", "value") == parseInt(event_selection_x[1])) {
-                        console.log('stop');
-                    }
+                    f.timeselection_update_fn()
                 }
 
 
@@ -830,12 +813,12 @@ tv.plot = {
                 //select a channel
                 var event_selection_y = [];
                 event_selection_y[1] = d3.event.selection[0][1];
-                event_selection_y = event_selection_y.map(f.sc_ctx_y.invert)
+                event_selection_y = event_selection_y.map(f.sc_ctx_y.invert);
 
                 //choose the time point
                 var event_selection_x = [];
                 event_selection_x[1] = d3.event.selection[0][0];
-                event_selection_x = event_selection_x.map(f.sc_ctx_x.invert)
+                event_selection_x = event_selection_x.map(f.sc_ctx_x.invert);
                 if (event_selection_x[1] < 0) {
                     event_selection_x[1] = 0 + f.da_x;
                 }
@@ -843,14 +826,14 @@ tv.plot = {
 
                 timerange = f.sc_fcs_x.domain()[1];
                 channelID = parseInt(event_selection_y[1]);
-                timepoint_length = f.da_lines[channelID].sig.length
+                timepoint_length = f.da_lines[channelID].sig.length;
 
                 timepoint = event_selection_x[1] / f.sc_fcs_x.domain()[1];
                 timepoint = timepoint * timepoint_length;
                 timepoint = parseInt(timepoint);
 
                 valuearray = f.ys().data;
-                channel_number = f.channels().length
+                channel_number = f.channels().length;
                 channel_index = f.channels().indexOf(channelID);
 
                 //print out the channel name(label) and value
@@ -867,13 +850,41 @@ tv.plot = {
                 .on("end", f.br_fcs_endfn).on("start", f.br_fcs_startfn)
                 .on("brush", f.br_fcs_brush);
 
-            // add brush groups and add brushes to them
+            // add time selection brush group
             f.gp_br_ctx_x = f.gp_ctx_x.append("g");
-
-            f.gp_br_fcs = f.gp_fcs.append("g").classed("brush", true).call(f.br_fcs);
+            //add title for the time selection area
+            f.timeselection_title = f.gp_br_ctx_x.append("text").text("Time Selection").attr("y", -10)
             f.gp_br_ctx_x.append("g").classed("brush", true).call(f.br_ctx_x).selectAll("rect").attr("height", f.sz_ctx_x.y);
 
 
+            //add main focus brush group
+            f.gp_br_fcs = f.gp_fcs.append("g").classed("brush", true).call(f.br_fcs);
+
+
+        };
+
+
+        //functions for the time selection window
+        f.timeselection_update_fn = function () {
+            //display the selected time range
+            f.text = f.gp_ctx_x.append("text").attr("class","selected-time").attr("id","time-selection")
+                .text("Selected Time Range: " + timeselection[0].toFixed(2) + "ms" + " to  " + timeselection[1].toFixed(2) + "ms");
+
+            f.text_interval=f.gp_ctx_x.append("text").attr("class","selected-time").attr("id","time-selection-interval").text(" Interval:" + (timeselection[1] - timeselection[0]).toFixed(2)).attr("x", 100).attr("y", -10);
+
+            timeselection_interval=timeselection[1] - timeselection[0];
+
+            //update the time in the input tag
+            d3.select("#TimeNow").property('value', timeselection[0].toFixed(2));
+
+            //update the time in the 3d viewer's time
+            $('#slider').slider('value', timeselection[0].toFixed(2));
+            loadFromTimeStep(parseInt(timeselection[0]));
+        };
+
+        f.interval_increase=function(){
+            timeselection[1]=timeselection[1]+1;
+            f.timeselection_update_fn()
         };
 
         f.parameters = ["w", "h", "p", "baseURL", "preview", "labels", "shape",

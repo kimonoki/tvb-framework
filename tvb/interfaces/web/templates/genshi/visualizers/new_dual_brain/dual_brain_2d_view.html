@@ -39,6 +39,7 @@
                 <span id="info-value">0</span>
             </li>
 
+
             <!--! Channel selector -->
             <xi:include href="${channelsPage}"/>
             <xi:include href="../commons/timeseries_selector_button.html"/>
@@ -53,10 +54,19 @@
                 buttonTitle="Select signals from Input %d" % (idx+1))}
             </li>
         </ul>
+        <!--interval controls-->
+        <div class="interval-control action action-plus" style="margin-top: -200px" onclick="intervalIncrease()">
 
+        </div>
+        <div class="interval-control action action-minus" style="margin-top: -200px" onclick="intervalDecrease()">
+
+        </div>
         <!--! Actual visualizer -->
         <div id="time-series-viewer"></div>
 
+
+
         <input type="hidden" id="columnIndexId"/>
+
     </section>
 </div>

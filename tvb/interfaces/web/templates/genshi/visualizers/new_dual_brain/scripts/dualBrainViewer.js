@@ -470,7 +470,22 @@ function submitSelectedChannels(isEndOfData) {
 
 }
 
+//timeseries viewer
 var ts = null;
+
+//time selection functions
+function intervalIncrease() {
+    console.log(timeselection_interval);
+    timeselection_interval+=1;
+    $("#time-selection-interval").html(timeselection_interval)
+}
+
+function intervalDecrease(){
+    timeselection_interval-=1;
+    $("#time-selection-interval").html(timeselection_interval)
+}
+
+
 
 function resizeToFillParent(ts) {
     var container, width, height;
