@@ -116,6 +116,12 @@ class NewDualViewer(BrainViewer):
             params['urlVertices'] = None
             params['isSEEG'] = True
 
+        if isinstance(time_series, TimeSeriesRegion):
+            params['withTransparency'] = True
+        else:
+            params['withTransparency'] = False
+
+
         return self.build_display_result("new_dual_brain/view", params,
                                          pages=dict(controlPage="new_dual_brain/controls",
                                                     channelsPage="commons/channel_selector.html"))

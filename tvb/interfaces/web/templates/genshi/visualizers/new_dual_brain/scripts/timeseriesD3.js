@@ -33,6 +33,10 @@
 
 /* global tv, d3 */
 
+//will store the interval and time selection range
+var timeselection_interval=0;
+var timeselection=[];
+
 tv = {};
 
 tv.util = {
