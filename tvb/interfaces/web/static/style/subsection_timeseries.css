@@ -45,9 +45,9 @@ rect.selection {
 
 }
 
-/*remove the styling for the lefright handle*/
-rect.handle.handle--e, rect.handle.handle--w {
-    stroke:none !important;
+/*remove the styling for the left and right handle*/
+rect.handle  {
+    stroke:none;
 }
 
 
