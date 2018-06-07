@@ -22,5 +22,5 @@ void main(void) {
 
     vec2 uv = uActivity[int(aVertexRegion)];
     vColor = colorSchemeLookup(uv);
-    vColor.a=uAlpha;
+    vColor.a = uAlpha;
 }
