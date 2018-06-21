@@ -438,7 +438,7 @@ function submitSelectedChannels(isEndOfData) {
     }
 
 
-    //TODO find why it's 1 and don't use hardcoded numbers here
+    //TODO find why it's 1 and don't use hardcoded numbers here, or use timeseries method
     var dataShape = [AG_time.length, 1, AG_submitableSelectedChannels.length, 1];
     var selectedLabels = []
     for (let i = 0; i < AG_submitableSelectedChannels.length; i++) {
@@ -475,16 +475,16 @@ var ts = null;
 
 //time selection functions
 function intervalIncrease() {
-    console.log(timeselection_interval);
-    timeselection_interval+=1;
-    $("#time-selection-interval").html(timeselection_interval)
+    timeselection_interval += 1;
+    $("#time-selection-interval").html(timeselection_interval);
+    tsView.timeselection_interval_increase();
 }
 
-function intervalDecrease(){
-    timeselection_interval-=1;
-    $("#time-selection-interval").html(timeselection_interval)
+function intervalDecrease() {
+    timeselection_interval -= 1;
+    $("#time-selection-interval").html(timeselection_interval);
+    tsView.timeselection_interval_decrease()
 }
-
 
 
 function resizeToFillParent(ts) {

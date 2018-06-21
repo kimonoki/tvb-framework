@@ -154,6 +154,7 @@ var activityMin = 0, activityMax = 0;
 var isOneToOneMapping = false;
 var isDoubleView = false;
 var isEEGView = false;
+//apply transparency on the shell surface
 var withTransparency = false;
 var drawingMode;
 var VS_showLegend = true;
@@ -424,6 +425,9 @@ function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, 
         // For the double view the selection is the responsibility of the extended view functions
     }
     withTransparency = transparencyStatus;
+    //pause by default
+    AG_isStopped = true;
+
 }
 
 function _isValidActivityData() {
@@ -578,6 +582,11 @@ function _initSliders() {
                 sliderSel = true;
                 currentTimeValue = target.value;
                 $('#TimeNow').val(currentTimeValue);
+            },
+            change: function (event, ui) {
+                triggered_by_timeselection = false;
+                tsView.timeselection_move_fn();
+                triggered_by_timeselection = true;
             },
             stop: function (event, target) {
                 sliderSel = false;
@@ -1282,7 +1291,8 @@ function initActivityData() {
  * Load the brainviewer from this given time step.
  */
 function loadFromTimeStep(step) {
-    showBlockerOverlay(50000);
+    // TODO doesn't work in firefox. not showing the loading process in other browsers
+    // showBlockerOverlay(50000);
     if (step % TIME_STEP !== 0) {
         step = step - step % TIME_STEP + TIME_STEP; // Set time to be multiple of step
     }
