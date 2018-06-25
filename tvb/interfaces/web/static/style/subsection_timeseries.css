@@ -30,7 +30,7 @@
 /* !------------------------------------------------------- */
 
 /*overlay changed in d3v4 for new dual brain viewer*/
-.overlay{
+rect.overlay{
     visibility: hidden;
 }
 
