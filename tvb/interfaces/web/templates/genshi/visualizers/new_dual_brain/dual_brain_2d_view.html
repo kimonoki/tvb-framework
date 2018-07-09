@@ -54,13 +54,17 @@
                 buttonTitle="Select signals from Input %d" % (idx+1))}
             </li>
         </ul>
-        <!--interval controls-->
-        <div class="interval-control action action-plus" style="margin-top: -200px" onclick="intervalIncrease()">
 
-        </div>
-        <div class="interval-control action action-minus" style="margin-top: -200px" onclick="intervalDecrease()">
+        <ul class="toolbar-inline">
+            <!--interval controls-->
+            <div class="interval-control action action-plus"  onclick="intervalIncrease()">
+                Increase Interval
+            </div>
+            <div class="interval-control action action-minus"  onclick="intervalDecrease()">
+                Decrease Interval
+            </div>
+        </ul>
 
-        </div>
         <!--! Actual visualizer -->
         <div id="time-series-viewer"></div>
 

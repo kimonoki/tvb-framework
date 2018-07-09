@@ -163,6 +163,8 @@ var AG_modeSelector = null;
 // GID for the D3 viewer
 var filterGid = null;
 
+//timeseries viewer
+var ts = null;
 
 window.onresize = function () {
     resizeToFillParent();
@@ -388,7 +390,6 @@ function _AG_getSelectedDataAndLongestChannelIndex(data) {
  * exist then just use the previous 'displayedChannels' (or default in case of first run).
  */
 function submitSelectedChannels(isEndOfData) {
-
     AG_currentIndex = AG_numberOfVisiblePoints;
     if (AG_submitableSelectedChannels.length === 0) {
         AG_submitableSelectedChannels = displayedChannels.slice();
@@ -438,14 +439,14 @@ function submitSelectedChannels(isEndOfData) {
     }
 
 
-    //TODO find why it's 1 and don't use hardcoded numbers here, or use timeseries method
+    //The shape we use for time series now only uses 1D
     var dataShape = [AG_time.length, 1, AG_submitableSelectedChannels.length, 1];
     var selectedLabels = []
     for (let i = 0; i < AG_submitableSelectedChannels.length; i++) {
         selectedLabels.push([chanDisplayLabels[displayedChannels[i]]]);
     }
 
-
+    //use d3 to create 2D plot
     ts = tv.plot.time_series();
     ts.baseURL(baseDataURLS[0]).preview(false).mode(0).state_var(0);
     ts.shape(dataShape).t0(AG_time[1] / 2).dt(AG_time[1]);
@@ -469,9 +470,6 @@ function submitSelectedChannels(isEndOfData) {
     });
 
 }
-
-//timeseries viewer
-var ts = null;
 
 //time selection functions
 function intervalIncrease() {
@@ -603,7 +601,6 @@ function loadEEGChartFromTimeStep(step) {
     const dataPage = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
     AG_allPoints = getDisplayedChannels(dataPage[0], 0).slice(0);
     AG_time = HLPR_readJSONfromFile(timeSetUrls[0][chunkForStep]).slice(0);
-
     totalPassedData = chunkForStep * dataPageSize;	// New passed data will be all data until the start of this page
     currentDataFileIndex = chunkForStep;
     AG_displayedPoints = [];

@@ -387,6 +387,10 @@ function _VS_init_cubicalMeasurePoints() {
 }
 
 
+
+
+
+
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                                boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask) {
@@ -562,7 +566,7 @@ function _initSliders() {
 
     if (timeData.length > 0) {
         $("#sliderStep").slider({
-            min: 0, max: maxSpeedSlider, step: 1, value: 5,
+            min: 0.49, max: maxSpeedSlider, step: 1, value: 5,
             stop: function () {
                 refreshCurrentDataSlice();
                 sliderSel = false;
@@ -1116,6 +1120,10 @@ function tick() {
     const currentTimeInFrame = Math.floor((currentTimeValue - totalPassedActivitiesData) / TIME_STEP);
     updateColors(currentTimeInFrame);
 
+    //update energy
+    if(timeselection_interval!=0){
+             init_cubicalMeasurePoints_energy();
+    }
     drawScene();
 
     /// Update FPS and Movie timeline
@@ -1130,7 +1138,8 @@ function tick() {
 
         lastTime = timeNow;
         if (timeData.length > 0 && !AG_isStopped) {
-            document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
+            //TODO workaround for incorrect time values
+            document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue]+0.49, 2);
         }
         let meanFrameTime = 0;
         for (let i = 0; i < framestime.length; i++) {
@@ -1291,8 +1300,7 @@ function initActivityData() {
  * Load the brainviewer from this given time step.
  */
 function loadFromTimeStep(step) {
-    // TODO doesn't work in firefox. not showing the loading process in other browsers
-    // showBlockerOverlay(50000);
+    showBlockerOverlay(50000);
     if (step % TIME_STEP !== 0) {
         step = step - step % TIME_STEP + TIME_STEP; // Set time to be multiple of step
     }
@@ -1411,3 +1419,20 @@ function readFileData(fileUrl, async, callIdentifier) {
 
 
 /////////////////////////////////////// ~~~~~~~~~~ END DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
+
+/////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
+
+//init spheres with energy controlling the radius
+function init_cubicalMeasurePoints_energy() {
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        // generate spheres
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i],timeselection_energy[i][currentTimeValue]);
+        const bufferVertices = result[0];
+        const bufferNormals = result[1];
+        const bufferTriangles = result[2];
+        const bufferColor = createColorBufferForCube(false);
+        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
+    }
+}
+
+/////////////////////////////////////// ~~~~~~~~~~ END ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
