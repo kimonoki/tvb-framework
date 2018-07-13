@@ -17,7 +17,7 @@
  *
  **/
 
-/* globals gl, GL_shaderProgram, SHADING_Context */
+/* globals gl, GL_shaderProgram, SHADING_Context tsView */
 
 /**
  * WebGL methods "inheriting" from webGL_xx.js in static/js.
@@ -377,7 +377,7 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
 
 function _VS_init_cubicalMeasurePoints() {
     for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 3);//3 for the default radius value now, we will modify it later
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 1);//3 for the default radius value now, we will modify it later
         const bufferVertices = result[0];
         const bufferNormals = result[1];
         const bufferTriangles = result[2];
@@ -385,10 +385,6 @@ function _VS_init_cubicalMeasurePoints() {
         measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
     }
 }
-
-
-
-
 
 
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
@@ -1121,8 +1117,9 @@ function tick() {
     updateColors(currentTimeInFrame);
 
     //update energy
-    if(timeselection_interval!=0){
-             init_cubicalMeasurePoints_energy();
+    if(timeselection_interval!=0 && !AG_isStopped){
+
+             changeCubicalMeasurePoints_energy();
     }
     drawScene();
 
@@ -1248,7 +1245,6 @@ function drawScene() {
         //display the channel name
         if (VS_pickedIndex != -1) {
             displayMessage("The highlighted node is " + measurePointsLabels[VS_pickedIndex], "infoMessage")
-
         }
         doPick = false;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1421,12 +1417,12 @@ function readFileData(fileUrl, async, callIdentifier) {
 /////////////////////////////////////// ~~~~~~~~~~ END DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
 
 /////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
-
 //init spheres with energy controlling the radius
-function init_cubicalMeasurePoints_energy() {
-    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+function changeCubicalMeasurePoints_energy() {
+    selectedchannels=tsView.channels()
+    for (let i = 0; i < selectedchannels.length; i++) {
         // generate spheres
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i],timeselection_energy[i][currentTimeValue]);
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[selectedchannels[i]],timeselection_energy[i][currentTimeValue]);
         const bufferVertices = result[0];
         const bufferNormals = result[1];
         const bufferTriangles = result[2];
@@ -1434,5 +1430,4 @@ function init_cubicalMeasurePoints_energy() {
         measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
     }
 }
-
 /////////////////////////////////////// ~~~~~~~~~~ END ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////

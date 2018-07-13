@@ -44,7 +44,7 @@ var triggered_by_timeselection = true;
 var selection_x = [];
 
 //store the energy calculated from the time selection
-var timeselection_energy =[];
+var timeselection_energy = [];
 
 tv = {};
 
@@ -340,8 +340,8 @@ tv.plot = {
         }; // end function f()
 
         f.energy_callback = function (data) {
-            timeselection_energy=data;
-            init_cubicalMeasurePoints_energy();
+            timeselection_energy = data;
+            changeCubicalMeasurePoints_energy();
         };
 
         f.render = function () {
@@ -810,7 +810,6 @@ tv.plot = {
                 if (d3.event.selection != null) {
                     f.timeselection_update_fn(triggered_by_timeselection)
                 }
-                timeselection_interval_length=parseInt(timeselection_interval/f.dt())-1;
 
 
             };
@@ -901,6 +900,10 @@ tv.plot = {
 
             if (triggered) {
                 timeselection_interval = timeselection[1] - timeselection[0];
+                timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
+
+                //call the energy computation method
+                tv.util.get_time_selection_energy(f.baseURL(), f.current_slice(), f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
 
                 //update the time in the input tag
                 d3.select("#TimeNow").property('value', timeselection[0].toFixed(2));
@@ -908,11 +911,7 @@ tv.plot = {
                 $('#slider').slider('value', timeselection[0].toFixed(2));
                 loadFromTimeStep(parseInt(timeselection[0]));
 
-                //call the energy computation method
-                //TODO update channel info when changed
-                tv.util.get_time_selection_energy(f.baseURL(), f.current_slice(), f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
             }
-
         };
 
         //move the time selection window with the slider
@@ -928,9 +927,7 @@ tv.plot = {
 
         f.timeselection_interval_decrease = function () {
             d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] - f.dt(), timeselection[1] - 2 * f.dt()].map(f.sc_ctx_x));
-
         }
-
 
         //TODO need to fix one additional step brought by any change
         function redrawSelection() {
