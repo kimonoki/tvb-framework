@@ -188,6 +188,8 @@ var near = 0.1;
 
 // index of the currently selected node. This is equivalent to CONN_pickedIndex
 var VS_pickedIndex = -1;
+//selected channels used to color the energy spheres
+var VS_selectedchannels=[];
 
 var VB_BrainNavigator;
 
@@ -1007,8 +1009,8 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
             gl.uniform1i(GL_shaderProgram.useVertexColors, false);
             gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
 
-            // set sphere color green for the picked ones and yellow for the others
-            if (i == VS_pickedIndex) {
+            // set sphere color green for the selected channels ones and yellow for the others
+            if (VS_selectedchannels.includes(i)) {
                 gl.uniform4f(GL_shaderProgram.materialColor, 0.34, 0.95, 0.37, 1.0);
                 drawBuffer(drawMode, buffersSets[i]);
             }
@@ -1419,7 +1421,7 @@ function readFileData(fileUrl, async, callIdentifier) {
 /////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
 //init spheres with energy controlling the radius
 function changeCubicalMeasurePoints_energy() {
-    selectedchannels=tsView.channels()
+    selectedchannels=tsView.channels();
     for (let i = 0; i < selectedchannels.length; i++) {
         // generate spheres
         const result = HLPR_sphereBufferAtPoint(gl, measurePoints[selectedchannels[i]],timeselection_energy[i][currentTimeValue]);

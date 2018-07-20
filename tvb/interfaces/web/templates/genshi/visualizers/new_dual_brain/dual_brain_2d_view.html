@@ -56,13 +56,16 @@
         </ul>
 
         <ul class="toolbar-inline">
-            <!--interval controls-->
-            <div class="interval-control action action-plus"  onclick="intervalIncrease()">
-                Increase Interval
+
+            <div class="movie-time">
+                <input type="text" id="SetIntervalStart" value="0"/> ms
+                <input type="text" id="SetIntervalEnd" value="0"/> ms
+                <div class="interval-control action " onclick="intervalSet()">
+                    Submit
+                </div>
             </div>
-            <div class="interval-control action action-minus"  onclick="intervalDecrease()">
-                Decrease Interval
-            </div>
+
+
         </ul>
 
         <!--! Actual visualizer -->

@@ -459,6 +459,8 @@ function submitSelectedChannels(isEndOfData) {
     ts(d3.select("#time-series-viewer"));
     tsView = ts;
 
+    VS_selectedchannels=tsView.channels();
+
     // This is arbitrarily set to a value. To be consistent with tsview we rescale relative to this value
     _initial_magic_fcs_amp_scl = tsView.magic_fcs_amp_scl;
 
@@ -469,19 +471,6 @@ function submitSelectedChannels(isEndOfData) {
         }
     });
 
-}
-
-//time selection functions
-function intervalIncrease() {
-    timeselection_interval += 1;
-    $("#time-selection-interval").html(timeselection_interval);
-    tsView.timeselection_interval_increase();
-}
-
-function intervalDecrease() {
-    timeselection_interval -= 1;
-    $("#time-selection-interval").html(timeselection_interval);
-    tsView.timeselection_interval_decrease()
 }
 
 
@@ -1025,3 +1014,12 @@ function updateSpeedFactor() {
 }
 
 //------------------------------------------------END SPEED RELATED CODE--------------------------------------------------------
+//------------------------------------------------START TIME SERIES TIME SELECTION RELATED CODE--------------------------------------------------------
+
+        function intervalSet(){
+            var start=$('#SetIntervalStart').val();
+            var end=$('#SetIntervalEnd').val();
+            if(start<end){
+                tsView.timeselection_interval_set(start,end);
+            }
+        }

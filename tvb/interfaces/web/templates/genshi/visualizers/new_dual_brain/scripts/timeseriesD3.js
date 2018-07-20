@@ -407,6 +407,7 @@ tv.plot = {
             return [{lo: lo, hi: hi, di: di}];
         };
 
+
         // dimensions and placement of focus and context areas
         f.compute_layout = function () {
             // pad is only provisionally basis for dimensioning the context areas; later
@@ -792,7 +793,6 @@ tv.plot = {
 
             br_ctx_end = function () {
 
-
                 //get the selected time range
                 var event_selection_x = [];
                 if (d3.event.selection != null) {
@@ -901,16 +901,14 @@ tv.plot = {
             if (triggered) {
                 timeselection_interval = timeselection[1] - timeselection[0];
                 timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
-
                 //call the energy computation method
                 tv.util.get_time_selection_energy(f.baseURL(), f.current_slice(), f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
-
                 //update the time in the input tag
                 d3.select("#TimeNow").property('value', timeselection[0].toFixed(2));
                 //update the time in the 3d viewer's time
-                $('#slider').slider('value', timeselection[0].toFixed(2));
+                var time_index=parseInt((timeselection[0]-f.t0())/f.dt());
+                $('#slider').slider('value', time_index);
                 loadFromTimeStep(parseInt(timeselection[0]));
-
             }
         };
 
@@ -920,17 +918,11 @@ tv.plot = {
         };
 
 
-        //increase and decease the interval by dt, need minus dt brought by the triggered change
-        f.timeselection_interval_increase = function () {
-            d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] - f.dt(), timeselection[1]].map(f.sc_ctx_x));
-        }
-
-        f.timeselection_interval_decrease = function () {
-            d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] - f.dt(), timeselection[1] - 2 * f.dt()].map(f.sc_ctx_x));
-        }
-
         //TODO need to fix one additional step brought by any change
         function redrawSelection() {
+            if (parseInt(timeselection[1]) == parseInt(f.sc_ctx_x.domain()[1])) {
+                f.jump_to_next_time_range()
+            }
             if (timeStepsPerTick > 1) {
                 d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] + f.dt() * timeStepsPerTick, timeselection[1] + f.dt() * timeStepsPerTick].map(f.sc_ctx_x));
             }
@@ -942,6 +934,27 @@ tv.plot = {
             }
         }
 
+        f.jump_to_next_time_range = function(){
+            var time_data_length=f.shape()[0];
+            var current_slice_length=f.current_slice()[0].hi-f.current_slice()[0].lo;
+            if(f.current_slice()[0].hi+current_slice_length<time_data_length){
+                dom=f.sc_ctx_x.domain();
+                var slice_length=dom[1]-dom[0];
+                dom[0]=dom[1]-timeselection_interval;
+                dom[1]=dom[1]+slice_length;
+                f.sc_ctx_x.domain(dom);
+                f.gp_ax_ctx_x.call(f.ax_ctx_x);
+            }
+            else{
+                dom=[timeselection[1],f.t0() + f.dt() * f.shape()[0]];
+                f.sc_ctx_x.domain(dom);
+                f.gp_ax_ctx_x.call(f.ax_ctx_x);
+            }
+        };
+
+        f.timeselection_interval_set = function (start, end) {
+            d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [start, end].map(f.sc_ctx_x));
+        };
 
         f.parameters = ["w", "h", "p", "baseURL", "preview", "labels", "shape",
             "t0", "dt", "ts", "ys", "point_limit", "channels", "mode", "state_var"];
