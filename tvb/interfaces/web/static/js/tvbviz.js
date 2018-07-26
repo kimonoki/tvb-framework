@@ -551,7 +551,7 @@ tv.plot = {
         return f;
     },
 
-        //time sereis uses d3v5
+    //time sereis uses d3v5
     time_series: function () {
         var f = function (root) {
 
@@ -1135,12 +1135,10 @@ tv.plot = {
 
         //functions for the time selection window
         f.timeselection_update_fn = function (triggered) {
-
             //display the selected time range
-            f.text_timeselection_range = f.gp_ctx_x.append("text").attr("class", "selected-time").attr("id", "time-selection")
-                .text("Selected Time Range: " + timeselection[0].toFixed(2) + "ms" + " to  " + timeselection[1].toFixed(2) + "ms");
-            f.text_interval = f.gp_ctx_x.append("text").attr("class", "selected-time").attr("id", "time-selection-interval")
-                .text(" Interval:" + (timeselection[1] - timeselection[0]).toFixed(2) + " ms").attr("x", 100).attr("y", -10);
+            d3.select("#SetIntervalStart").property('value', timeselection[0].toFixed(2));
+            d3.select("#SetIntervalEnd").property('value', timeselection[1].toFixed(2));
+            $("#info-interval").html((timeselection[1] - timeselection[0]).toFixed(2) + "ms");
 
             if (triggered) {
                 timeselection_interval = timeselection[1] - timeselection[0];
@@ -1150,7 +1148,7 @@ tv.plot = {
                 //update the time in the input tag
                 d3.select("#TimeNow").property('value', timeselection[0].toFixed(2));
                 //update the time in the 3d viewer's time
-                var time_index=parseInt((timeselection[0]-f.t0())/f.dt());
+                var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
                 $('#slider').slider('value', time_index);
                 loadFromTimeStep(parseInt(timeselection[0]));
             }
@@ -1167,6 +1165,12 @@ tv.plot = {
             if (parseInt(timeselection[1]) == parseInt(f.sc_ctx_x.domain()[1])) {
                 f.jump_to_next_time_range()
             }
+            else if (timeselection[0] >= f.sc_ctx_x.domain()[1] - f.dt()) {
+                dom = [0, f.t0() + f.dt() * f.shape()[0]];
+                f.sc_ctx_x.domain(dom);
+                f.gp_ax_ctx_x.call(f.ax_ctx_x);
+                d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [0, timeselection[1] - timeselection[0]].map(f.sc_ctx_x));
+            }
             if (timeStepsPerTick > 1) {
                 d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] + f.dt() * timeStepsPerTick, timeselection[1] + f.dt() * timeStepsPerTick].map(f.sc_ctx_x));
             }
@@ -1178,19 +1182,22 @@ tv.plot = {
             }
         }
 
-        f.jump_to_next_time_range = function(){
-            var time_data_length=f.shape()[0];
-            var current_slice_length=f.current_slice()[0].hi-f.current_slice()[0].lo;
-            if(f.current_slice()[0].hi+current_slice_length<time_data_length){
-                dom=f.sc_ctx_x.domain();
-                var slice_length=dom[1]-dom[0];
-                dom[0]=dom[1]-timeselection_interval;
-                dom[1]=dom[1]+slice_length;
+        f.jump_to_next_time_range = function () {
+
+            var time_data_length = f.shape()[0];
+            var current_slice_length = f.current_slice()[0].hi - f.current_slice()[0].lo;
+            if (f.current_slice()[0].hi + current_slice_length < time_data_length) {
+                dom = f.sc_ctx_x.domain();
+                var slice_length = dom[1] - dom[0];
+                dom[0] = dom[1] - timeselection_interval;
+                dom[1] = dom[1] + slice_length;
                 f.sc_ctx_x.domain(dom);
                 f.gp_ax_ctx_x.call(f.ax_ctx_x);
             }
-            else{
-                dom=[timeselection[1],f.t0() + f.dt() * f.shape()[0]];
+            else if (f.current_slice()[0].hi == current_slice_length) {
+            }
+            else {
+                dom = [timeselection[1], f.t0() + f.dt() * f.shape()[0]];
                 f.sc_ctx_x.domain(dom);
                 f.gp_ax_ctx_x.call(f.ax_ctx_x);
             }
@@ -1254,7 +1261,7 @@ tv.plot = {
             for (var i = 0; i < nkeep; i++) {
                 vt_data[i] = [];
                 for (var j = 0; j < n; j++) {
-                    vt_data[i][j] = [j * w / 2.25 / n, ( 2 * h / 3 / nkeep / 2 / vt_scl) * cs.data[i * n + j]];
+                    vt_data[i][j] = [j * w / 2.25 / n, (2 * h / 3 / nkeep / 2 / vt_scl) * cs.data[i * n + j]];
                 }
             }
 
