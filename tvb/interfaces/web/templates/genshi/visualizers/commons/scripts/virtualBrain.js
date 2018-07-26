@@ -127,6 +127,8 @@ var activityMin = 0, activityMax = 0;
 var isOneToOneMapping = false;
 var isDoubleView = false;
 var isEEGView = false;
+//apply transparency on the shell surface
+var withTransparency = false;
 var drawingMode;
 var VS_showLegend = true;
 var isInternalSensorView = false;
@@ -157,8 +159,30 @@ var near = 0.1;
 
 // index of the currently selected node. This is equivalent to CONN_pickedIndex
 var VS_pickedIndex = -1;
-
+//selected channels used to color the energy spheres
+var VS_selectedchannels=[];
 var VB_BrainNavigator;
+
+//default time selection time
+var timeselection_interval=0;
+//indicating we are drawing the energy spheres and applying material colors
+var isDrawingSpheres = false;
+/**
+ * Change transparency of cortical surface from user-input.
+ *
+ * @param inputField user given input value for transparency of cortical-surface
+ */
+var _alphaValue = 1;
+function changeSurfaceTransparency(inputField) {
+    var newValue = inputField.value;
+
+    if (!isNaN(parseFloat(newValue)) && isFinite(newValue) && parseFloat(newValue) >= 0 && parseFloat(newValue) <= 1) {
+        _alphaValue = parseFloat(newValue);
+    } else {
+        inputField.value = _alphaValue;
+        displayMessage("Transparency value should be a number between 0 and 1.", "warningMessage");
+    }
+}
 
 
 function VS_init_hemisphere_mask(hemisphere_chunk_mask) {
@@ -351,6 +375,17 @@ function _VS_init_cubicalMeasurePoints() {
     }
 }
 
+function _VS_init_sphereMeasurePoints() {
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 1);//3 for the default radius value now, we will modify it later
+        const bufferVertices = result[0];
+        const bufferNormals = result[1];
+        const bufferTriangles = result[2];
+        const bufferColor = createColorBufferForCube(false);
+        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
+    }
+}
+
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
                                boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask) {
@@ -375,19 +410,24 @@ function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, 
                                      urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                                      urlRegionMapList, minActivity, maxActivity,
                                      oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
-                                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
+                                     urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID, transparencyStatus) {
     _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
         urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
         urlRegionMapList, minActivity, maxActivity,
         oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
         urlMeasurePointsLabels, boundaryURL);
-    _VS_init_cubicalMeasurePoints();
+    _VS_init_sphereMeasurePoints();
 
     if (!isDoubleView) {
         // If this is a brain activity viewer then we have to initialize the selection component
         _initChannelSelection(measurePointsSelectionGID);
         // For the double view the selection is the responsibility of the extended view functions
     }
+    withTransparency = transparencyStatus;
+    //pause by default
+    AG_isStopped = true;
+    _alphaValue=0.1;
+    displayMeasureNodes=true;
 }
 
 function _isValidActivityData() {
@@ -542,6 +582,11 @@ function _initSliders() {
                 sliderSel = true;
                 currentTimeValue = target.value;
                 $('#TimeNow').val(currentTimeValue);
+            },
+            change: function (event, ui) {
+                triggered_by_timeselection = false;
+                tsView.timeselection_move_fn();
+                triggered_by_timeselection = true;
             },
             stop: function (event, target) {
                 sliderSel = false;
@@ -913,6 +958,8 @@ function drawBuffer(drawMode, buffers) {
     setMatrixUniforms();
     if (isOneToOneMapping) {
         SHADING_Context.one_to_one_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
+    } else if (isDrawingSpheres) {
+        SHADING_Context.region_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[0], buffers[2], drawMode);
     } else {
         SHADING_Context.region_program_draw(GL_shaderProgram, buffers[0], buffers[1], buffers[3], buffers[2], drawMode);
     }
@@ -937,6 +984,12 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
         // Blending function for alpha: transparent pix blended over opaque -> opaque pix
         if (cullFace) {
             gl.enable(gl.CULL_FACE);
+            if (withTransparency) {
+                gl.uniform1f(GL_shaderProgram.alphaUniform, _alphaValue);
+            }
+            else {
+                gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
+            }
             gl.cullFace(cullFace);
         }
     }
@@ -945,11 +998,34 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
         if (bufferSetsMask !== null && bufferSetsMask !== undefined && !bufferSetsMask[i]) {
             continue;
         }
-        drawBuffer(drawMode, buffersSets[i]);
+
+        //display spheres with full alpha value
+        if (isDrawingSpheres) {
+            gl.uniform1i(GL_shaderProgram.useVertexColors, false);
+            gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
+
+            // set sphere color green for the selected channels ones and yellow for the others
+            if (VS_selectedchannels.includes(i)) {
+                gl.uniform4f(GL_shaderProgram.materialColor, 0.99, 0.99, 0.0, 1.0);
+                drawBuffer(drawMode, buffersSets[i]);
+            }
+            else {
+                gl.uniform4f(GL_shaderProgram.materialColor, 0.34, 0.95, 0.37, 1.0);
+                drawBuffer(drawMode, buffersSets[i]);
+            }
+            gl.uniform1i(GL_shaderProgram.useVertexColors, true);
+
+            if (withTransparency) {
+                gl.uniform1f(GL_shaderProgram.alphaUniform, _alphaValue);
+            }
+        }
+        else {
+            drawBuffer(drawMode, buffersSets[i]);
+        }
+
     }
 
     if (useBlending) {
-        gl.disable(gl.BLEND);
         gl.disable(gl.CULL_FACE);
         setLighting(lightSettings);
         // Draw the same transparent object the second time
@@ -1034,6 +1110,11 @@ function tick() {
     const currentTimeInFrame = Math.floor((currentTimeValue - totalPassedActivitiesData) / TIME_STEP);
     updateColors(currentTimeInFrame);
 
+    //update energy
+    if(timeselection_interval!=0 && !AG_isStopped){
+
+             changeCubicalMeasurePoints_energy();
+    }
     drawScene();
 
     /// Update FPS and Movie timeline
@@ -1097,9 +1178,15 @@ function drawScene() {
         }
 
         if (isInternalSensorView) {
-            // for internal sensors we render only the sensors
+            gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
             drawBuffers(gl.TRIANGLES, measurePointsBuffers);
         } else {
+            //draw the nodes first to make it appear
+            if (displayMeasureNodes) {
+                isDrawingSpheres = true;
+                drawBuffers(gl.TRIANGLES, measurePointsBuffers);
+                isDrawingSpheres = false;
+            }
             // draw surface
             drawBuffers(drawingMode, brainBuffers, bufferSetsMask);
 
@@ -1107,9 +1194,6 @@ function drawScene() {
 
             if (drawTriangleLines) {
                 drawBrainLines(brainLinesBuffers, brainBuffers, bufferSetsMask);
-            }
-            if (displayMeasureNodes) {
-                drawBuffers(gl.TRIANGLES, measurePointsBuffers);
             }
         }
 
@@ -1127,7 +1211,6 @@ function drawScene() {
 
     } else {
         gl.bindFramebuffer(gl.FRAMEBUFFER, GL_colorPickerBuffer);
-        gl.disable(gl.BLEND);
         gl.disable(gl.DITHER);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         setLighting(pickingLightSettings);
@@ -1136,12 +1219,18 @@ function drawScene() {
             GL_initColorPickingData(NO_OF_MEASURE_POINTS);
         }
 
+        isDrawingSpheres = true;
         for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
             const mpColor = GL_colorPickerInitColors[i];
             gl.uniform4fv(GL_shaderProgram.materialColor, mpColor);
             drawBuffer(gl.TRIANGLES, measurePointsBuffers[i]);
         }
+        isDrawingSpheres = false;
         VS_pickedIndex = GL_getPickedIndex();
+        //display the channel name
+        if (VS_pickedIndex != -1) {
+            displayMessage("The highlighted node is " + measurePointsLabels[VS_pickedIndex], "infoMessage")
+        }
         doPick = false;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
@@ -1311,3 +1400,18 @@ function readFileData(fileUrl, async, callIdentifier) {
 
 
 /////////////////////////////////////// ~~~~~~~~~~ END DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
+/////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
+//init spheres with energy controlling the radius
+function changeCubicalMeasurePoints_energy() {
+    selectedchannels=tsView.channels();
+    for (let i = 0; i < selectedchannels.length; i++) {
+        // generate spheres
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[selectedchannels[i]],timeselection_energy[i][currentTimeValue]);
+        const bufferVertices = result[0];
+        const bufferNormals = result[1];
+        const bufferTriangles = result[2];
+        const bufferColor = createColorBufferForCube(false);
+        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
+    }
+}
+/////////////////////////////////////// ~~~~~~~~~~ END ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////

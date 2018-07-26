@@ -58,11 +58,16 @@
         <ul class="toolbar-inline">
 
             <div class="movie-time">
-                <input type="text" id="SetIntervalStart" value="0"/> ms
+                <mark>Time Selection</mark>
+                <input type="text" id="SetIntervalStart" value="0"/> to
                 <input type="text" id="SetIntervalEnd" value="0"/> ms
                 <div class="interval-control action " onclick="intervalSet()">
                     Submit
                 </div>
+                <li class="value-inspector value-interval">
+                </li>
+                <mark>Interval:</mark>
+                <span id="info-interval">0</span>
             </div>
 
 
