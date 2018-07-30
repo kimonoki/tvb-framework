@@ -36,7 +36,8 @@
 
             <!--SEEG controls-->
             <py:if test="not defined('isSEEG')">
-                <xi:include href='../commons/brain_toggle_controls.html' py:with="hasRegionMap=not isOneToOneMapping"/>
+                 <!--no measurepoints toggle control for the dual viewer-->
+                <xi:include href='../commons/brain_toggle_controls.html' py:with="hasRegionMap=isOneToOneMapping"/>
 
                 <py:if test="not extended_view">
                     <dt></dt>
