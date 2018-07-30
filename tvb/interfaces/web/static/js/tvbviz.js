@@ -1143,8 +1143,13 @@ tv.plot = {
             if (triggered) {
                 timeselection_interval = timeselection[1] - timeselection[0];
                 timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
+                //retrieve energy for the whole timeline rather than a slice
+                var all_slice=f.current_slice();
+                all_slice[0].di=f.shape()[1];
+                all_slice[0].hi=f.shape()[0];
+                all_slice[0].lo=0;
                 //call the energy computation method
-                tv.util.get_time_selection_energy(f.baseURL(), f.current_slice(), f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
+                tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
                 //update the time in the input tag
                 d3.select("#TimeNow").property('value', timeselection[0].toFixed(2));
                 //update the time in the 3d viewer's time
@@ -1183,7 +1188,6 @@ tv.plot = {
         }
 
         f.jump_to_next_time_range = function () {
-
             var time_data_length = f.shape()[0];
             var current_slice_length = f.current_slice()[0].hi - f.current_slice()[0].lo;
             if (f.current_slice()[0].hi + current_slice_length < time_data_length) {
