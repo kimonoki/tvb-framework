@@ -1148,6 +1148,7 @@ tv.plot = {
                 all_slice[0].di=f.shape()[1];
                 all_slice[0].hi=f.shape()[0];
                 all_slice[0].lo=0;
+
                 //call the energy computation method
                 tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
                 //update the time in the input tag
