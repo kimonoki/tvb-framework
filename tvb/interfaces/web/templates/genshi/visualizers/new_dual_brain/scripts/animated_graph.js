@@ -51,7 +51,7 @@ var AG_computedStep = 50;
 //The normalization steps for each of the channels, in order to bring them centered near the channel bar
 var AG_normalizationSteps = [];
 //If the animation is paused using pause/start button
-var AG_isStopped = false;
+var AG_isStopped = true;
 //If animation speed is set at a 0 value
 var AG_isSpeedZero = false;
 //the number of points that are shifted/unshift at a moment
@@ -99,27 +99,13 @@ var lbl_x_width = 100;
 var lbl_x_height = 30;
 var zoom_range = [0.1, 20];
 
-var AG_defaultXaxis = {zoomRange: zoom_range, labelWidth: lbl_x_width, labelHeight: lbl_x_height};
-var AG_defaultYaxis = {show: false, zoomRange: zoom_range, labelWidth: 200, labelHeight: 30};
 
 // the index of the cached file (the file that was loaded asynchronous)
 var cachedFileIndex = 0;
-var labelX = "";
-var chartTitle = "";
 //The displayed labels for the graph
 var chanDisplayLabels = [];
 // setup plot
 var AG_options = {
-    series: {
-        shadowSize: 0,
-        color: 'blue'
-    }, // drawing is faster without shadows
-    lines: {
-        lineWidth: 1,
-        show: true
-    },
-    yaxis: AG_defaultYaxis,
-    xaxis: AG_defaultXaxis,
     grid: {
         backgroundColor: 'white',
         hoverable: true,
@@ -137,9 +123,6 @@ var AG_options = {
     },
     legend: {
         show: false
-    },
-    hooks: {
-        processRawData: [processRawDataHook]
     }
 };
 
@@ -176,27 +159,16 @@ var AG_regionSelector = null;
 // State mode selector. Used as a global only in dual view
 var AG_modeSelector = null;
 
-function resizeToFillParent() {
-    const canvas = $('#EEGcanvasDiv');
-    let container, width, height;
 
-    if (!isSmallPreview) {
-        // Just use parent section width and height. For width remove some space for the labels to avoid scrolls
-        // For height we have the toolbar there. Using 100% does not seem to work properly with FLOT.
-        container = canvas.parent();
-        width = container.width() - 40;
-        height = container.height() - 80;
-    } else {
-        container = $('body');
-        width = container.width() - 40;
-        height = container.height() - 20;
-    }
-    canvas.width(width).height(height);
-}
+// GID for the D3 viewer
+var filterGid = null;
+
+//timeseries viewer
+var ts = null;
 
 window.onresize = function () {
     resizeToFillParent();
-    redrawPlot(plot.getData());
+    // redrawPlot(plot.getData());
 };
 
 /**
@@ -211,11 +183,7 @@ function AG_startAnimatedChart(ag_settings) {
     drawSliderForAnimationSpeed();
     _AG_init_selection(ag_settings.measurePointsSelectionGIDs);
 
-    bindHoverEvent();
-    initializeCanvasEvents();
-    if (!ag_settings.extended_view) {
-        bindZoomEvent();
-    }
+
 }
 
 function AG_startAnimatedChartPreview(ag_settings) {
@@ -267,6 +235,7 @@ function _AG_initGlobals(ag_settings) {
     totalTimeLength = ag_settings.totalLength;
     nanValueFound = ag_settings.nan_value_found;
     AG_computedStep = ag_settings.translationStep;
+
 }
 
 /**
@@ -286,7 +255,7 @@ function _AG_initPaginationState(number_of_visible_points) {
  * @private
  */
 function _AG_preStart() {
-    resizeToFillParent();
+    // resizeToFillParent();
 }
 
 /**
@@ -299,6 +268,8 @@ function _AG_preStart() {
 function _AG_init_selection(filterGids) {
     let i;
     let selectors = [];
+
+    filterGid = filterGids;
 
     /**
      * Returns the selected channel indices as interpreted by AG_submitableSelectedChannels
@@ -375,53 +346,8 @@ function _AG_get_speed(defaultSpeed) {
     return speed;
 }
 
-/*
- * Create FLOT specific options dictionary for the y axis, with correct labels and positioning for
- * all channels. Then store these values in 'AG_homeViewYValues' so they can be used in case of a
- * 'Home' action in a series of zoom events.
- */
-function AG_createYAxisDictionary(nr_channels) {
-    let ticks, yaxis_dict, increment;
-
-    if (AG_translationStep > 0) {
-        ticks = [];
-        const step = AG_computedStep * AG_translationStep;
-        for (let i = 0; i < nr_channels; i++) {
-            ticks.push([i * step, chanDisplayLabels[displayedChannels[i]]]);
-        }
-        yaxis_dict = {
-            min: -step,
-            max: (nr_channels + 1) * step,
-            ticks: ticks,
-            zoomRange: [0.1, 20]
-        };
-        increment = nr_channels * step / numberOfPointsForVerticalLine;
-        if (increment === 0) throw "infinite loop";
-        for (let k = -step; k < (nr_channels + 1) * step; k += increment) {
-            followingLine.push([0, k]);
-        }
-    } else {
-        ticks = [0, 'allChannels'];
-        yaxis_dict = {
-            min: -AG_computedStep / 2,
-            max: AG_computedStep / 2,
-            ticks: ticks,
-            zoomRange: [0.1, 20]
-        };
-        increment = AG_computedStep / numberOfPointsForVerticalLine;
-        if (increment === 0) throw "infinite loop";
-        for (let kk = -AG_computedStep / 2; kk < AG_computedStep / 2; kk += increment) {
-            followingLine.push([0, kk]);
-        }
-    }
-    AG_options.yaxis = yaxis_dict;
-    AG_homeViewYValues = [yaxis_dict.min, yaxis_dict.max];
-    AG_defaultYaxis = yaxis_dict;
-}
-
 function refreshChannels() {
     submitSelectedChannels(false);
-    drawGraph(false, noOfShiftedPoints);
 }
 
 function _AG_changeMode(tsIndex, val) {
@@ -432,6 +358,12 @@ function _AG_changeMode(tsIndex, val) {
 function _AG_changeStateVariable(tsIndex, val) {
     tsStates[tsIndex] = parseInt(val);
     refreshChannels();
+}
+
+
+//this function is used in virtualBrain.js keep it for now
+function drawGraph() {
+
 }
 
 function _AG_getSelectedDataAndLongestChannelIndex(data) {
@@ -458,7 +390,6 @@ function _AG_getSelectedDataAndLongestChannelIndex(data) {
  * exist then just use the previous 'displayedChannels' (or default in case of first run).
  */
 function submitSelectedChannels(isEndOfData) {
-
     AG_currentIndex = AG_numberOfVisiblePoints;
     if (AG_submitableSelectedChannels.length === 0) {
         AG_submitableSelectedChannels = displayedChannels.slice();
@@ -507,26 +438,73 @@ function submitSelectedChannels(isEndOfData) {
         displayMessage('The given data contains some NaN values. All the NaN values were replaced by zero.', 'warningMessage');
     }
 
-    // draw the first 'AG_numberOfVisiblePoints' points
-    redrawCurrentView();
-    if (!isSmallPreview) {
-        AG_translationStep = $('#ctrl-input-spacing').slider("option", "value") / 4;
-        AG_scaling = $("#ctrl-input-scale").slider("value");
-    } else {
-        AG_translationStep = 1;
+
+    //The shape we use for time series now only uses 1D
+    var dataShape = [AG_time.length, 1, AG_submitableSelectedChannels.length, 1];
+    var selectedLabels = []
+    for (let i = 0; i < AG_submitableSelectedChannels.length; i++) {
+        selectedLabels.push([chanDisplayLabels[displayedChannels[i]]]);
     }
 
-    AG_createYAxisDictionary(AG_noOfLines);
-    redrawPlot([]);
-    resetToDefaultView();
-    if (AG_isStopped) {
-        AG_isStopped = false;
-        drawGraph(false, noOfShiftedPoints);
-        AG_isStopped = true;
-    } else {
-        drawGraph(false, noOfShiftedPoints);
-    }
+    //use d3 to create 2D plot
+    ts = tv.plot.time_series();
+    ts.baseURL(baseDataURLS[0]).preview(false).mode(0).state_var(0);
+    ts.shape(dataShape).t0(AG_time[1] / 2).dt(AG_time[1]);
+    ts.labels(selectedLabels);
+    ts.channels(AG_submitableSelectedChannels);
+
+
+    resizeToFillParent(ts);
+    $('#time-series-viewer').empty();
+    ts(d3.select("#time-series-viewer"));
+    tsView = ts;
+
+    VS_selectedchannels=tsView.channels();
+
+    // This is arbitrarily set to a value. To be consistent with tsview we rescale relative to this value
+    _initial_magic_fcs_amp_scl = tsView.magic_fcs_amp_scl;
+
+    $("#ctrl-input-scale").slider({
+        value: 50, min: 0, max: 100,
+        slide: function (event, target) {
+            _updateScalingFromSlider(target.value);
+        }
+    });
+
 }
+
+
+function resizeToFillParent(ts) {
+    var container, width, height;
+
+    container = $('#eegSectionId').parent();
+    width = container.width();
+
+    //minus toolbar's height
+    height = container.height() - 60;
+
+    ts.w(width).h(height);
+
+}
+
+function _updateScalingFromSlider(value) {
+    if (value == null) {
+        value = $("#ctrl-input-scale").slider("value");
+    }
+    var expo_scale = (value - 50) / 50; // [1 .. -1]
+    var scale = Math.pow(10, expo_scale * 4); // [1000..-1000]
+    tsView.magic_fcs_amp_scl = _initial_magic_fcs_amp_scl * scale;
+    tsView.prepare_data();
+    tsView.render_focus();
+
+    if (scale >= 1) {
+        $("#display-scale").html("1 * " + scale.toFixed(2));
+    } else {
+        $("#display-scale").html("1 / " + (1 / scale).toFixed(2));
+    }
+
+}
+
 
 /**
  * This method decides if we are at the beginning or end of the graph, in which case we only need
@@ -571,169 +549,6 @@ function generateChannelColors(nr_of_channels) {
     }
 }
 
-/*
- * Get y-axis labels and update colors to correspond to each channel
- */
-function setLabelColors() {
-    const labels = $('.flot-y-axis .tickLabel');
-    for (let i = 0; i < labels.length; i++) {
-        const chan_idx = chanDisplayLabels.indexOf(labels[i].firstChild.textContent);
-        if (chan_idx >= 0) {
-            labels[i].style.color = AG_reversedChannelColorsDict[displayedChannels.indexOf(chan_idx)];
-            labels[i].style.left = 80 + (i % 2) * 40 + 'px';
-        }
-    }
-}
-
-/*
- * This method draw the actual plot. The 'executeShift' parameter decides if a shift is
- * to be done, or just use the previous data points. 'shiftNo' decides the number of points
- * that will be shifted.
- */
-function drawGraph(executeShift, shiftNo) {
-    let i;
-    noOfShiftedPoints = shiftNo;
-    if (isEndOfData) {
-        isEndOfData = false;
-        submitSelectedChannels(true);
-    }
-    if (t !== null && t !== undefined) {
-        clearTimeout(t);
-    }
-    if (AG_isStopped) {
-        return;
-    }
-    if (shouldLoadNextDataFile()) {
-        loadNextDataFile();
-    }
-
-    let direction = 1;
-    if (_AG_get_speed(1) < 0) {
-        direction = -1;
-    }
-
-    let moveLine = shouldMoveLine(direction, noOfShiftedPoints);
-    //Increment line position in case we need to move the line
-    if (moveLine && executeShift && !AG_isSpeedZero) {
-        currentLinePosition = currentLinePosition + noOfShiftedPoints * direction;
-    }
-
-    if (currentLinePosition >= AG_numberOfVisiblePoints) {
-        isEndOfData = true;
-    }
-
-    if (executeShift && !AG_isSpeedZero && !moveLine) {
-        let count = 0;
-        if (direction === -1) {
-            if (currentDataFileIndex > 0 || AG_currentIndex > AG_numberOfVisiblePoints) {
-                count = 0;
-                while (count < noOfShiftedPoints && AG_currentIndex - count > AG_numberOfVisiblePoints) {
-                    count = count + 1;
-                    AG_displayedTimes.unshift(AG_time[AG_currentIndex - AG_numberOfVisiblePoints - count]);
-                    for (i = 0; i < AG_displayedPoints.length; i++) {
-                        AG_displayedPoints[i].unshift(
-                            [AG_time[AG_currentIndex - AG_numberOfVisiblePoints - count],
-                                AG_addTranslationStep(AG_allPoints[i][AG_currentIndex - AG_numberOfVisiblePoints - count], i)
-                            ]);
-                        AG_displayedPoints[i].pop();
-                    }
-                    AG_displayedTimes.pop();
-                }
-
-                if (AG_currentIndex - count > AG_numberOfVisiblePoints) {
-                    AG_currentIndex = AG_currentIndex - count;
-                } else {
-                    AG_currentIndex = Math.min(AG_currentIndex, AG_numberOfVisiblePoints);
-                    if (currentDataFileIndex > 0 && isNextDataLoaded) {
-                        changeCurrentDataFile();
-                    }
-                }
-            }
-        } else {
-            if (totalTimeLength > AG_currentIndex + totalPassedData) {
-                // here we add new 'noOfShiftedPoints' points to the chart and remove the first 'noOfShiftedPoints' visible points
-                count = 0;
-                while (count < noOfShiftedPoints && totalTimeLength > AG_currentIndex + count) {
-                    AG_displayedTimes.push(AG_time[AG_currentIndex + count]);
-                    for (i = 0; i < AG_displayedPoints.length; i++) {
-                        AG_displayedPoints[i].push(
-                            [AG_time[AG_currentIndex + count],
-                                AG_addTranslationStep(AG_allPoints[i][AG_currentIndex + count], i)
-                            ]);
-                        AG_displayedPoints[i].shift();
-                    }
-                    AG_displayedTimes.shift();
-                    count = count + 1;
-                }
-
-                if (AG_currentIndex + count < AG_allPoints[longestChannelIndex].length) {
-                    AG_currentIndex = AG_currentIndex + count;
-                } else {
-                    AG_currentIndex = Math.max(AG_currentIndex, AG_allPoints[longestChannelIndex].length);
-                    if (maxDataFileIndex > 0 && isNextDataLoaded) {
-                        changeCurrentDataFile();
-                    }
-                }
-            }
-        }
-    }
-    if (!AG_isSpeedZero) {
-        for (i = 0; i < followingLine.length; i++) {
-            followingLine[i][0] = AG_displayedTimes[currentLinePosition];
-        }
-        let preparedData = [];
-        for (let j = 0; j < AG_displayedPoints.length; j++) {
-            preparedData.push({data: AG_displayedPoints[j].slice(0), color: AG_reversedChannelColorsDict[j]});
-        }
-        preparedData.push({data: followingLine, color: 'rgb(255, 0, 0)'});
-        plot.setData(preparedData);
-        plot.setupGrid();
-        plot.draw();
-        setLabelColors();
-    }
-    if (!isDoubleView) {
-        t = setTimeout("drawGraph(true, noOfShiftedPoints)", getTimeoutBasedOnSpeed());
-    }
-}
-
-/*
- * Do a redraw of the plot. Be sure to keep the resizable margin elements as the plot method seems to destroy them.
- */
-function redrawPlot(data) {
-    const target = $('#EEGcanvasDiv');
-    const resizerChildren = target.children('.ui-resizable-handle');
-    for (let i = 0; i < resizerChildren.length; i++) {
-        target[0].removeChild(resizerChildren[i]);
-    }
-    plot = $.plot(target, data, $.extend(true, {}, AG_options));
-    for (let j = 0; j < resizerChildren.length; j++) {
-        target[0].appendChild(resizerChildren[j]);
-    }
-    setLabelColors();
-}
-
-
-/**
- * This hook will be called before Flot copies and normalizes the raw data for the given
- * series. If the function fills in datapoints.points with normalized
- * points and sets datapoints.pointsize to the size of the points,
- * Flot will skip the copying/normalization step for this series.
- */
-function processRawDataHook(plot, series, data, datapoints) {
-    datapoints.format = [
-        {x: true, number: true, required: true},
-        {y: true, number: true, required: true}
-    ];
-    datapoints.pointsize = 2;
-
-    for (let i = 0; i < data.length; i++) {
-        datapoints.points.push(data[i][0]);
-        datapoints.points.push(data[i][1]);
-    }
-
-    series.xaxis.used = series.yaxis.used = true;
-}
-
 
 /**
  * Translate the given value.
@@ -775,7 +590,6 @@ function loadEEGChartFromTimeStep(step) {
     const dataPage = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
     AG_allPoints = getDisplayedChannels(dataPage[0], 0).slice(0);
     AG_time = HLPR_readJSONfromFile(timeSetUrls[0][chunkForStep]).slice(0);
-
     totalPassedData = chunkForStep * dataPageSize;	// New passed data will be all data until the start of this page
     currentDataFileIndex = chunkForStep;
     AG_displayedPoints = [];
@@ -1127,3 +941,85 @@ function getDisplayedChannels(listOfAllChannels, offset) {
     }
     return selectedData;
 }
+
+
+//------------------------------------------------START ZOOM RELATED CODE--------------------------------------------------------
+function stopAnimation() {
+    AG_isStopped = !AG_isStopped;
+    var btn = $("#ctrl-action-pause");
+    if (AG_isStopped) {
+        btn.html("Start");
+        btn.attr("class", "action action-controller-launch");
+    } else {
+        btn.html("Pause");
+        btn.attr("class", "action action-controller-pause");
+    }
+
+}
+
+
+//------------------------------------------------START SCALE RELATED CODE--------------------------------------------------------
+
+
+function drawSliderForScale() {
+    function _onchange() {
+        /** When scaling, we need to redraw the graph and update the HTML with the new values.
+         */
+        var spacing = $("#ctrl-input-spacing").slider("value") / 4;
+        var scale = $("#ctrl-input-scale").slider("value");
+
+        if (spacing >= 0 && AG_currentIndex <= AG_numberOfVisiblePoints) {
+            AG_currentIndex = AG_numberOfVisiblePoints;
+        } else if (spacing < 0 && (AG_allPoints[0].length - AG_currentIndex) < AG_numberOfVisiblePoints) {
+            AG_currentIndex = AG_allPoints[0].length;
+        }
+        AG_displayedPoints = [];
+        for (var i = 0; i < AG_noOfLines; i++) {
+            AG_displayedPoints.push([]);
+        }
+        _updateScaleFactor(scale);
+    }
+
+    $("#ctrl-input-scale").slider({value: 1, min: 1, max: 32, change: _onchange});
+
+    $("#display-scale").html("" + AG_scaling);
+}
+
+function _updateScaleFactor(scale) {
+    AG_scaling = scale;
+    $("#display-scale").html("" + AG_scaling);
+}
+
+//------------------------------------------------END SCALE RELATED CODE--------------------------------------------------------
+
+//------------------------------------------------START SPEED RELATED CODE--------------------------------------------------------
+
+function drawSliderForAnimationSpeed() {
+    $("#ctrl-input-speed").slider({
+        orientation: 'horizontal',
+        value: 3,
+        min: -50,
+        max: 50,
+        change: function (event, ui) {
+            updateSpeedFactor();
+        }
+    });
+}
+
+
+function updateSpeedFactor() {
+    var speed = $("#ctrl-input-speed").slider("option", "value");
+    $('#display-speed').html('' + speed);
+    AG_isSpeedZero = (speed == 0);
+}
+
+//------------------------------------------------END SPEED RELATED CODE--------------------------------------------------------
+//------------------------------------------------START TIME SERIES TIME SELECTION RELATED CODE--------------------------------------------------------
+
+        function intervalSet(){
+            var start=$('#SetIntervalStart').val();
+            var end=$('#SetIntervalEnd').val();
+            if(start<end){
+                tsView.timeselection_interval_set(start,end);
+            }
+        }
