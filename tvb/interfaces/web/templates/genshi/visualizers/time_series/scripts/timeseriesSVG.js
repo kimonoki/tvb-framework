@@ -129,6 +129,8 @@ function initTimeseriesViewer(baseURL, isPreview, dataShape, t0, dt, channelLabe
     ts.shape(dataShape).t0(t0).dt(dt);
     ts.labels(_compute_labels_for_current_selection());
     ts.channels(TS_SVG_selectedChannels);
+    //used in tvbviz to render context lines
+    ts.viewer_type('svg');
     // run
     resizeToFillParent(ts);
     ts(d3.select("#time-series-viewer"));
