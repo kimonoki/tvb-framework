@@ -168,7 +168,6 @@ var ts = null;
 
 window.onresize = function () {
     resizeToFillParent();
-    // redrawPlot(plot.getData());
 };
 
 /**
@@ -452,6 +451,7 @@ function submitSelectedChannels(isEndOfData) {
     ts.shape(dataShape).t0(AG_time[1] / 2).dt(AG_time[1]);
     ts.labels(selectedLabels);
     ts.channels(AG_submitableSelectedChannels);
+    ts.viewer_type('dualbrain');
 
 
     resizeToFillParent(ts);
@@ -459,7 +459,6 @@ function submitSelectedChannels(isEndOfData) {
     ts(d3.select("#time-series-viewer"));
     tsView = ts;
 
-    VS_selectedchannels=tsView.channels();
 
     // This is arbitrarily set to a value. To be consistent with tsview we rescale relative to this value
     _initial_magic_fcs_amp_scl = tsView.magic_fcs_amp_scl;

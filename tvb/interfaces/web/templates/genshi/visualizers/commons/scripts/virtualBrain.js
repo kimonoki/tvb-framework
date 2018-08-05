@@ -159,12 +159,9 @@ var near = 0.1;
 
 // index of the currently selected node. This is equivalent to CONN_pickedIndex
 var VS_pickedIndex = -1;
-//selected channels used to color the energy spheres
-var VS_selectedchannels=[];
 var VB_BrainNavigator;
 
-//default time selection time
-var timeselection_interval=0;
+
 //indicating we are drawing the energy spheres and applying material colors
 var isDrawingSpheres = false;
 /**
@@ -583,7 +580,7 @@ function _initSliders() {
                 currentTimeValue = target.value;
                 $('#TimeNow').val(currentTimeValue);
             },
-            change: function (event, ui) {
+            change: function () {
                 triggered_by_timeselection = false;
                 tsView.timeselection_move_fn();
                 triggered_by_timeselection = true;
@@ -1005,7 +1002,7 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
             gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
 
             // set sphere color green for the selected channels ones and yellow for the others
-            if (VS_selectedchannels.includes(i)) {
+            if (VS_selectedRegions.includes(i)) {
                 gl.uniform4f(GL_shaderProgram.materialColor, 0.99, 0.99, 0.0, 1.0);
                 drawBuffer(drawMode, buffersSets[i]);
             }
@@ -1112,8 +1109,7 @@ function tick() {
 
     //update energy
     if(timeselection_interval!=0 && !AG_isStopped){
-
-             changeCubicalMeasurePoints_energy();
+             changeSphereMeasurePoints_energy();
     }
     drawScene();
 
@@ -1402,11 +1398,10 @@ function readFileData(fileUrl, async, callIdentifier) {
 /////////////////////////////////////// ~~~~~~~~~~ END DATA RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
 /////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
 //init spheres with energy controlling the radius
-function changeCubicalMeasurePoints_energy() {
-    selectedchannels=tsView.channels();
-    for (let i = 0; i < selectedchannels.length; i++) {
+function changeSphereMeasurePoints_energy() {
+    for (let i = 0; i < VS_selectedRegions.length; i++) {
         // generate spheres
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[selectedchannels[i]],timeselection_energy[i][currentTimeValue]);
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[VS_selectedRegions[i]],timeselection_energy[i][currentTimeValue]);
         const bufferVertices = result[0];
         const bufferNormals = result[1];
         const bufferTriangles = result[2];

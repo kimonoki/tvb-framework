@@ -40,6 +40,7 @@ var timeselection = [];
 
 // identify the initiator of the change of the time selection: brushing or movie timeline
 var triggered_by_timeselection = true;
+var triggered_by_changeinput=false;
 //store the unmapped selection value used to animate the time selection window
 var selection_x = [];
 
@@ -586,7 +587,8 @@ tv.plot = {
 
         f.energy_callback = function (data) {
             timeselection_energy = data;
-            changeCubicalMeasurePoints_energy();
+            changeSphereMeasurePoints_energy();
+            closeBlockerOverlay();
         };
 
         f.render = function () {
@@ -778,8 +780,8 @@ tv.plot = {
 
             // scales for vertical and horizontal context, and the x and y axis of the focus area
             f.sc_ctx_y = d3.scaleLinear().domain([-1, f.shape()[2]]).range([f.sz_ctx_y.y, 0]);
-            f.sc_ctx_x = d3.scaleLinear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_ctx_x.x]);
-            f.sc_fcs_x = d3.scaleLinear().domain([f.t0(), f.t0() + f.dt() * f.shape()[0]]).range([0, f.sz_fcs.x]);
+            f.sc_ctx_x = d3.scaleLinear().domain([f.t0(), f.t0() + f.dt() * (f.shape()[0]-1)]).range([0, f.sz_ctx_x.x]);
+            f.sc_fcs_x = d3.scaleLinear().domain([f.t0(), f.t0() + f.dt() * (f.shape()[0]-1)]).range([0, f.sz_fcs.x]);
             f.sc_fcs_y = d3.scaleLinear().domain([-1, f.shape()[2] + 1]).range([f.sz_fcs.y, 0]);
 
 
@@ -1042,7 +1044,7 @@ tv.plot = {
                     //2.from the end of focus brush
                     else if (d3.event.selection == null) {
                         event_selection_x = [f.sc_ctx_x.range()[0], f.sc_ctx_x.range()[1]];
-                        f.dom_x = [f.t0(), f.t0() + f.dt() * f.shape()[0]];
+                        f.dom_x = [f.t0(), f.t0() + f.dt() * (f.shape()[0]-1)];
                     }
                     //3.from itself
                     else {
@@ -1114,7 +1116,8 @@ tv.plot = {
             f.br_ctx_y_fn = br_ctx_y_fn;
             //move the focus with the x context brush in the svg viewer, different from the fn that evokes from the focus brush
             br_ctx_x_move=function(){
-                                    var event_selection = [];
+                if(f.viewer_type()==='svg'){
+                    var event_selection = [];
                     // Different extent when it is:
                     //1.from the brush of 2D Focus Brush
                     if (d3.event.selection != null && d3.event.selection[0][0] != null) {
@@ -1145,6 +1148,7 @@ tv.plot = {
                     // TODO: This seems to cause problems with negative values and commenting it out does not seem to
                     // cause any additional problems. This could do with some double checking.
                     f.gp_lines.attr("transform", "translate(" + sc(0) + ", 0) scale(" + x_scaling + ", 1)");
+                }
             }
 
             br_ctx_y_move=function(){
@@ -1191,7 +1195,7 @@ tv.plot = {
 
                 //change the actual time point in the slider
                 if (d3.event.selection != null) {
-                    f.timeselection_update_fn(triggered_by_timeselection)
+                    f.timeselection_update_fn()
                 }
                 }
 
@@ -1288,44 +1292,48 @@ tv.plot = {
         };
 
         //functions for the time selection window
-        f.timeselection_update_fn = function (triggered) {
+        f.timeselection_update_fn = function () {
             //display the selected time range
             d3.select("#SetIntervalStart").property('value', timeselection[0].toFixed(2));
             d3.select("#SetIntervalEnd").property('value', timeselection[1].toFixed(2));
             $("#info-interval").html((timeselection[1] - timeselection[0]).toFixed(2) + "ms");
 
-            if (triggered) {
+            if (triggered_by_timeselection) {
                 timeselection_interval = timeselection[1] - timeselection[0];
                 timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
                 //retrieve energy for the whole timeline rather than a slice
-                var all_slice=f.current_slice();
-                all_slice[0].di=f.shape()[1];
-                all_slice[0].hi=f.shape()[0];
-                all_slice[0].lo=0;
+                var all_slice = f.current_slice();
+                all_slice[0].di = f.shape()[1];
+                all_slice[0].hi = f.shape()[0];
+                all_slice[0].lo = 0;
 
-                //call the energy computation method
+                //call the energy computation method and block until get the enery data
+                showBlockerOverlay(50000);
                 tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
                 //update the time in the input tag
-                d3.select("#TimeNow").property('value', timeselection[0].toFixed(2));
-                //update the time in the 3d viewer's time
                 var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
+                triggered_by_changeinput = true;
+                $('#TimeNow').val(time_index)
                 $('#slider').slider('value', time_index);
-                loadFromTimeStep(parseInt(timeselection[0]));
+                triggered_by_changeinput = false;
+                loadFromTimeStep(time_index);
             }
         };
 
         //move the time selection window with the slider
         f.timeselection_move_fn = function () {
-            redrawSelection()
+            //only change by movie playing
+            if (!triggered_by_changeinput) {
+                redrawSelection()
+            }
         };
 
-        //TODO need to fix one additional step brought by any change
         function redrawSelection() {
             if (parseInt(timeselection[1]) == parseInt(f.sc_ctx_x.domain()[1])) {
                 f.jump_to_next_time_range()
             }
             else if (timeselection[0] >= f.sc_ctx_x.domain()[1] - f.dt()) {
-                dom = [0, f.t0() + f.dt() * f.shape()[0]];
+                dom = [0, f.t0() + f.dt() * (f.shape()[0] - 1)];
                 f.sc_ctx_x.domain(dom);
                 f.gp_ax_ctx_x.call(f.ax_ctx_x);
                 d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [0, timeselection[1] - timeselection[0]].map(f.sc_ctx_x));
@@ -1355,7 +1363,7 @@ tv.plot = {
             else if (f.current_slice()[0].hi == current_slice_length) {
             }
             else {
-                dom = [timeselection[1], f.t0() + f.dt() * f.shape()[0]];
+                dom = [timeselection[1], f.t0() + f.dt() * (f.shape()[0] - 1)];
                 f.sc_ctx_x.domain(dom);
                 f.gp_ax_ctx_x.call(f.ax_ctx_x);
             }
