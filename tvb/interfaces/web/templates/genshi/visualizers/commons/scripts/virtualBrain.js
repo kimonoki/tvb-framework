@@ -1125,7 +1125,14 @@ function tick() {
 
         lastTime = timeNow;
         if (timeData.length > 0 && !AG_isStopped) {
-            document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
+            //syncing time with the d3 plot
+            if (tsView.viewer_type() === 'dualbrain') {
+                //add dt because the 2d will add one step after the slider changes
+                document.getElementById("TimeNow").value = (timeselection[0]+tsView.dt()).toFixed(2);
+            }
+            else {
+                document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
+            }
         }
         let meanFrameTime = 0;
         for (let i = 0; i < framestime.length; i++) {
