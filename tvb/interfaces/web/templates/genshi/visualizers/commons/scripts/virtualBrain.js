@@ -1004,7 +1004,7 @@ function drawBuffers(drawMode, buffersSets, bufferSetsMask, useBlending, cullFac
             gl.uniform1i(GL_shaderProgram.useVertexColors, false);
             gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
 
-            // set sphere color green for the selected channels ones and yellow for the others
+            // set sphere color green for the selected channels and yellow for the others
             if (VS_selectedRegions.includes(i)) {
                 gl.uniform4f(GL_shaderProgram.materialColor, 0.99, 0.99, 0.0, 1.0);
                 drawBuffer(drawMode, buffersSets[i]);
@@ -1112,7 +1112,12 @@ function tick() {
 
     //update energy
     if(timeselection_interval!=0 && !AG_isStopped){
-             changeSphereMeasurePoints_energy();
+        if(isInternalSensorView){
+            VSI_change_energySphericalMeasurePoints()
+        }
+        else{
+            changeSphereMeasurePoints_energy();
+        }
     }
     drawScene();
 
@@ -1184,9 +1189,10 @@ function drawScene() {
         }
 
         if (isInternalSensorView) {
-            gl.uniform1f(GL_shaderProgram.alphaUniform, 1);
+            // for internal sensors we render only the sensors
             drawBuffers(gl.TRIANGLES, measurePointsBuffers);
-        } else {
+        }
+        else {
             //draw the nodes first to make it appear
             if (displayMeasureNodes) {
                 isDrawingSpheres = true;
@@ -1419,4 +1425,5 @@ function changeSphereMeasurePoints_energy() {
         measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
     }
 }
+
 /////////////////////////////////////// ~~~~~~~~~~ END ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////

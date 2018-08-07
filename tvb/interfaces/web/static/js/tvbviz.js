@@ -587,7 +587,12 @@ tv.plot = {
 
         f.energy_callback = function (data) {
             timeselection_energy = data;
-            changeSphereMeasurePoints_energy();
+            if (isInternalSensorView) {
+                VSI_change_energySphericalMeasurePoints()
+            }
+            else {
+                changeSphereMeasurePoints_energy();
+            }
             closeBlockerOverlay();
         };
 

@@ -26,6 +26,17 @@ function _VSI_bufferAtPoint(p, idx) {
     return [bufferVertices, bufferNormals, bufferTriangles, vertexRegionBuffer];
 }
 
+function VSI_change_energySphericalMeasurePoints() {
+    for (let i = 0; i < VS_selectedRegions.length; i++) {
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], timeselection_energy[i][currentTimeValue], 12, 12);
+        const bufferVertices = result[0];
+        const bufferNormals = result[1];
+        const bufferTriangles = result[2];
+        const vertexRegionBuffer = VSI_createColorBufferForSphere(i, bufferVertices.numItems * 3);
+        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, vertexRegionBuffer];
+    }
+}
+
 /**
  * Method used for creating a color buffer for a cube (measure point).
  */
@@ -75,5 +86,5 @@ function VSI_StartInternalActivityViewer(baseDatatypeURL, onePageSize, urlTimeLi
     _VSI_init_sphericalMeasurePoints();
 
     //pause by default
-    AG_isStopped = true;;
+    AG_isStopped = true;
 }
