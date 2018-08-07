@@ -581,9 +581,12 @@ function _initSliders() {
                 $('#TimeNow').val(currentTimeValue);
             },
             change: function () {
-                triggered_by_timeselection = false;
+                if (timeselection_interval!=0){
+                    triggered_by_timeselection = false;
                 tsView.timeselection_move_fn();
                 triggered_by_timeselection = true;
+                }
+
             },
             stop: function (event, target) {
                 sliderSel = false;
@@ -1126,9 +1129,9 @@ function tick() {
         lastTime = timeNow;
         if (timeData.length > 0 && !AG_isStopped) {
             //syncing time with the d3 plot
-            if (tsView.viewer_type() === 'dualbrain') {
-                //add dt because the 2d will add one step after the slider changes
-                document.getElementById("TimeNow").value = (timeselection[0]+tsView.dt()).toFixed(2);
+            //add dt because the 2d will add one step after the slider changes
+            if (timeselection[0]>0) {
+                document.getElementById("TimeNow").value = (timeselection[0] + tsView.dt()).toFixed(2);
             }
             else {
                 document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
