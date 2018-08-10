@@ -579,6 +579,9 @@ function _initSliders() {
                 sliderSel = true;
                 currentTimeValue = target.value;
                 $('#TimeNow').val(currentTimeValue);
+                if(timeselection_interval!=0){
+                tsView.timeselection_move_fn();
+                }
             },
             change: function () {
                 if (timeselection_interval!=0){
@@ -1133,12 +1136,16 @@ function tick() {
 
         lastTime = timeNow;
         if (timeData.length > 0 && !AG_isStopped) {
-            //syncing time with the d3 plot
-            //add dt because the 2d will add one step after the slider changes
-            if (timeselection[0]>0) {
-                document.getElementById("TimeNow").value = (timeselection[0] + tsView.dt()).toFixed(2);
+            if (timeselection[0] >= 0 && timeStepsPerTick < 1) {
+                document.getElementById("TimeNow").value = (timeselection[0]).toFixed(2);
+            }
+            else if (timeselection[0] > 0 && timeStepsPerTick >= 1) {
+                //syncing time with the d3 plot
+                //add dt because the 2d will add one step after the slider changes
+                document.getElementById("TimeNow").value = (timeselection[0]+ tsView.dt()*timeStepsPerTick).toFixed(2);
             }
             else {
+                //3d movie playing only
                 document.getElementById("TimeNow").value = toSignificantDigits(timeData[currentTimeValue], 2);
             }
         }

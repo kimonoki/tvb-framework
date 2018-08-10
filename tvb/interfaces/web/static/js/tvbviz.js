@@ -1318,7 +1318,7 @@ tv.plot = {
                 //update the time in the input tag
                 var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
                 triggered_by_changeinput = true;
-                $('#TimeNow').val(time_index)
+                $('#TimeNow').val(timeselection[0].toFixed(2));
                 $('#slider').slider('value', time_index);
                 triggered_by_changeinput = false;
                 loadFromTimeStep(time_index);
@@ -1343,15 +1343,8 @@ tv.plot = {
                 f.gp_ax_ctx_x.call(f.ax_ctx_x);
                 d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [0, timeselection[1] - timeselection[0]].map(f.sc_ctx_x));
             }
-            if (timeStepsPerTick > 1) {
-                d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] + f.dt() * timeStepsPerTick, timeselection[1] + f.dt() * timeStepsPerTick].map(f.sc_ctx_x));
-            }
-            else if (timeStepsPerTick < 1) {
-                d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] + f.dt() * 1 / (1 / timeStepsPerTick + 1), timeselection[1] + f.dt() * 1 / (1 / timeStepsPerTick + 1)].map(f.sc_ctx_x));
-            }
-            else if (timeStepsPerTick === 1) {
-                d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [timeselection[0] + f.dt(), timeselection[1] + f.dt()].map(f.sc_ctx_x));
-            }
+
+            d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [f.t0()+currentTimeValue*f.dt(),f.t0()+currentTimeValue*f.dt()+timeselection_interval].map(f.sc_ctx_x));
         }
 
         f.jump_to_next_time_range = function () {
