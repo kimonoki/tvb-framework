@@ -178,7 +178,6 @@ function AG_startAnimatedChart(ag_settings) {
     _AG_initGlobals(ag_settings);
     _AG_initPaginationState(ag_settings.number_of_visible_points);
     _AG_preStart();
-    drawSliderForScale();
     drawSliderForAnimationSpeed();
     _AG_init_selection(ag_settings.measurePointsSelectionGIDs);
 
@@ -359,12 +358,6 @@ function _AG_changeStateVariable(tsIndex, val) {
     refreshChannels();
 }
 
-
-//this function is used in virtualBrain.js keep it for now
-function drawGraph() {
-
-}
-
 function _AG_getSelectedDataAndLongestChannelIndex(data) {
     let offset = 0;
     let selectedData = [];
@@ -472,7 +465,6 @@ function submitSelectedChannels(isEndOfData) {
 
 }
 
-
 function resizeToFillParent(ts) {
     var container, width, height;
 
@@ -505,31 +497,6 @@ function _updateScalingFromSlider(value) {
 }
 
 
-/**
- * This method decides if we are at the beginning or end of the graph, in which case we only need
- * to move the vertical line, or in between, where vertical line is not moving, instead arrays are shifted.
- */
-function shouldMoveLine(direction, shiftNo) {
-    shiftNo = shiftNo || 1;
-    let isEndOfGraph = false;
-    let isStartOfGraph = false;
-    if (direction === 1) {
-        isEndOfGraph = ((totalPassedData + AG_currentIndex + noOfShiftedPoints >= totalTimeLength) && (currentLinePosition < AG_numberOfVisiblePoints + shiftNo));
-        isStartOfGraph = (currentLinePosition < targetVerticalLinePosition);
-        if (AG_displayedTimes[currentLinePosition] > AG_displayedPoints[longestChannelIndex][AG_displayedPoints[longestChannelIndex].length - 1][0]) {
-            isEndOfGraph = false;
-        }
-    } else {
-        isEndOfGraph = (currentLinePosition > targetVerticalLinePosition);
-        isStartOfGraph = ((totalPassedData + AG_currentIndex - noOfShiftedPoints < AG_numberOfVisiblePoints) && (currentLinePosition > 0));
-        if (AG_displayedTimes[currentLinePosition] <= 0) {
-            isStartOfGraph = false;
-        }
-    }
-
-    return isStartOfGraph || isEndOfGraph;
-}
-
 var isEndOfData = false;
 var AG_channelColorsDict = {};
 var AG_reversedChannelColorsDict = {};
@@ -548,7 +515,6 @@ function generateChannelColors(nr_of_channels) {
     }
 }
 
-
 /**
  * Translate the given value.
  * We use this method to translate the values for the drawn line charts because we don't want them to overlap.
@@ -559,85 +525,6 @@ function generateChannelColors(nr_of_channels) {
  */
 function AG_addTranslationStep(value, index) {
     return value * AG_scaling - AG_normalizationSteps[displayedChannels[index]] + AG_translationStep * AG_computedStep * index;
-}
-
-function getTimeoutBasedOnSpeed() {
-    const currentAnimationSpeedValue = _AG_get_speed(40);
-    if (currentAnimationSpeedValue === 0) {
-        return 300;
-    }
-    const timeout = 10 - Math.abs(currentAnimationSpeedValue);
-    if (timeout === 9) {
-        return 3000;
-    }
-    if (timeout === 8) {
-        return 2000;
-    }
-    if (timeout === 7) {
-        return 1000;
-    }
-    return timeout * 100 + 25;
-}
-
-/*
- * Load the data from a given step and center plot around that step.
- */
-function loadEEGChartFromTimeStep(step) {
-    // Read all data for the page in which the selected step falls into
-    const chunkForStep = Math.floor(step / dataPageSize);
-    const dataUrl = readDataPageURL(baseDataURLS[0], chunkForStep * dataPageSize, (chunkForStep + 1) * dataPageSize, tsStates[0], tsModes[0]);
-    const dataPage = [parseData(HLPR_readJSONfromFile(dataUrl), 0)];
-    AG_allPoints = getDisplayedChannels(dataPage[0], 0).slice(0);
-    AG_time = HLPR_readJSONfromFile(timeSetUrls[0][chunkForStep]).slice(0);
-    totalPassedData = chunkForStep * dataPageSize;	// New passed data will be all data until the start of this page
-    currentDataFileIndex = chunkForStep;
-    AG_displayedPoints = [];
-    const indexInPage = step % dataPageSize;	// This is the index in the current page that step will have
-    let fromIdx, toIdx;
-    currentLinePosition = AG_numberOfVisiblePoints / 2; // Assume we are not end or beginning since that will be most of the times
-    if (indexInPage <= AG_numberOfVisiblePoints / 2) {
-        if (chunkForStep === 0) {
-            // We are at the beginning of the graph, line did not reach middle point yet, and we are still displaying the first
-            // AG_numberOfVisiblePoints values
-            AG_currentIndex = AG_numberOfVisiblePoints;
-            currentLinePosition = indexInPage;
-            prepareDisplayData(0, AG_numberOfVisiblePoints, AG_allPoints, AG_time);
-        } else {
-            // We are at an edge case between pages. So in order to have all the
-            // AG_numberOfVisiblePoints we need to also load the points from before this page
-            addFromPreviousPage(indexInPage, chunkForStep);
-        }
-    } else {
-        if ((indexInPage >= pageSize - AG_numberOfVisiblePoints / 2) || (nrOfPagesSet[0] === 1 && indexInPage + AG_numberOfVisiblePoints / 2 > AG_time.length)) {
-            if (chunkForStep >= nrOfPagesSet[0] - 1) {
-                // We are at the end of the graph. The line is starting to move further right from the middle position. We are just
-                // displaying the last AG_numberOfVisiblePoints from the last page
-                if (AG_time.length > AG_numberOfVisiblePoints) {
-                    fromIdx = AG_time.length - 1 - AG_numberOfVisiblePoints;
-                } else {
-                    fromIdx = 0;
-                }
-                toIdx = AG_time.length - 1;
-                AG_currentIndex = toIdx;
-                currentLinePosition = AG_numberOfVisiblePoints - (AG_time.length - 1 - indexInPage);
-                prepareDisplayData(fromIdx, toIdx, AG_allPoints, AG_time);
-            } else {
-                // We are at an edge case between pages. So in order to have all the
-                // AG_numberOfVisiblePoints we need to also load the points from after this page
-                addFromNextPage(indexInPage, chunkForStep);
-            }
-        } else {
-            // We are somewhere in the middle of the graph.
-            fromIdx = indexInPage - AG_numberOfVisiblePoints / 2;
-            toIdx = indexInPage + AG_numberOfVisiblePoints / 2;
-            AG_currentIndex = toIdx;
-            prepareDisplayData(fromIdx, toIdx, AG_allPoints, AG_time);
-        }
-    }
-    nextData = [];
-    AG_isLoadStarted = false;
-    isNextDataLoaded = false;
-    isNextTimeDataLoaded = false;
 }
 
 /*
@@ -941,56 +828,6 @@ function getDisplayedChannels(listOfAllChannels, offset) {
     return selectedData;
 }
 
-
-//------------------------------------------------START ZOOM RELATED CODE--------------------------------------------------------
-function stopAnimation() {
-    AG_isStopped = !AG_isStopped;
-    var btn = $("#ctrl-action-pause");
-    if (AG_isStopped) {
-        btn.html("Start");
-        btn.attr("class", "action action-controller-launch");
-    } else {
-        btn.html("Pause");
-        btn.attr("class", "action action-controller-pause");
-    }
-
-}
-
-
-//------------------------------------------------START SCALE RELATED CODE--------------------------------------------------------
-
-
-function drawSliderForScale() {
-    function _onchange() {
-        /** When scaling, we need to redraw the graph and update the HTML with the new values.
-         */
-        var spacing = $("#ctrl-input-spacing").slider("value") / 4;
-        var scale = $("#ctrl-input-scale").slider("value");
-
-        if (spacing >= 0 && AG_currentIndex <= AG_numberOfVisiblePoints) {
-            AG_currentIndex = AG_numberOfVisiblePoints;
-        } else if (spacing < 0 && (AG_allPoints[0].length - AG_currentIndex) < AG_numberOfVisiblePoints) {
-            AG_currentIndex = AG_allPoints[0].length;
-        }
-        AG_displayedPoints = [];
-        for (var i = 0; i < AG_noOfLines; i++) {
-            AG_displayedPoints.push([]);
-        }
-        _updateScaleFactor(scale);
-    }
-
-    $("#ctrl-input-scale").slider({value: 1, min: 1, max: 32, change: _onchange});
-
-    $("#display-scale").html("" + AG_scaling);
-}
-
-function _updateScaleFactor(scale) {
-    AG_scaling = scale;
-    $("#display-scale").html("" + AG_scaling);
-}
-
-//------------------------------------------------END SCALE RELATED CODE--------------------------------------------------------
-
 //------------------------------------------------START SPEED RELATED CODE--------------------------------------------------------
 
 function drawSliderForAnimationSpeed() {
@@ -1005,7 +842,6 @@ function drawSliderForAnimationSpeed() {
     });
 }
 
-
 function updateSpeedFactor() {
     var speed = $("#ctrl-input-speed").slider("option", "value");
     $('#display-speed').html('' + speed);
@@ -1015,10 +851,10 @@ function updateSpeedFactor() {
 //------------------------------------------------END SPEED RELATED CODE--------------------------------------------------------
 //------------------------------------------------START TIME SERIES TIME SELECTION RELATED CODE--------------------------------------------------------
 
-        function intervalSet(){
-            var start=$('#SetIntervalStart').val();
-            var end=$('#SetIntervalEnd').val();
-            if(start<end){
-                tsView.timeselection_interval_set(start,end);
-            }
-        }
+function intervalSet() {
+    var start = $('#SetIntervalStart').val();
+    var end = $('#SetIntervalEnd').val();
+    if (start>=0 && start < end) {
+        tsView.timeselection_interval_set(start, end);
+    }
+}

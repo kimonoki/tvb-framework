@@ -579,12 +579,12 @@ function _initSliders() {
                 sliderSel = true;
                 currentTimeValue = target.value;
                 $('#TimeNow').val(currentTimeValue);
-                if(timeselection_interval!=0){
+                if(isDoubleView && timeselection_interval!=0){
                 tsView.timeselection_move_fn();
                 }
             },
             change: function () {
-                if (timeselection_interval!=0){
+                if (isDoubleView && timeselection_interval!=0){
                     triggered_by_timeselection = false;
                 tsView.timeselection_move_fn();
                 triggered_by_timeselection = true;
@@ -1090,10 +1090,6 @@ function tick() {
         if (currentTimeValue > MAX_TIME) {
             // Next time value is no longer in activity data.
             initActivityData();
-            if (isDoubleView) {
-                loadEEGChartFromTimeStep(0);
-                drawGraph(false, 0);
-            }
             shouldStep = false;
         }
 
@@ -1104,9 +1100,6 @@ function tick() {
             if (shouldChangeCurrentActivitiesFile()) {
                 changeCurrentActivitiesFile();
             }
-            if (isDoubleView) {
-                drawGraph(true, TIME_STEP);
-            }
         }
     }
 
@@ -1114,7 +1107,7 @@ function tick() {
     updateColors(currentTimeInFrame);
 
     //update energy
-    if(timeselection_interval!=0 && !AG_isStopped){
+    if(isDoubleView && timeselection_interval!=0 && !AG_isStopped){
         if(isInternalSensorView){
             VSI_change_energySphericalMeasurePoints()
         }
@@ -1136,13 +1129,13 @@ function tick() {
 
         lastTime = timeNow;
         if (timeData.length > 0 && !AG_isStopped) {
-            if (timeselection[0] >= 0 && timeStepsPerTick < 1) {
+            if (isDoubleView && timeselection[0] >= 0 && timeStepsPerTick < 1) {
                 document.getElementById("TimeNow").value = (timeselection[0]).toFixed(2);
             }
-            else if (timeselection[0] > 0 && timeStepsPerTick >= 1) {
+            else if (isDoubleView && timeselection[0] > 0 && timeStepsPerTick >= 1) {
                 //syncing time with the d3 plot
                 //add dt because the 2d will add one step after the slider changes
-                document.getElementById("TimeNow").value = (timeselection[0]+ tsView.dt()*timeStepsPerTick).toFixed(2);
+                document.getElementById("TimeNow").value = (timeselection[0] + tsView.dt() * timeStepsPerTick).toFixed(2);
             }
             else {
                 //3d movie playing only
@@ -1312,10 +1305,6 @@ function loadFromTimeStep(step) {
     nextActivitiesFileData = null;
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
     totalPassedActivitiesData = currentTimeValue;
-    // Also sync eeg monitor if in double view
-    if (isDoubleView) {
-        loadEEGChartFromTimeStep(step);
-    }
     closeBlockerOverlay();
 }
 

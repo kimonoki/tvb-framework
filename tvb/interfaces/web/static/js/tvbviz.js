@@ -33,7 +33,7 @@
 
 /* global tv, d3 */
 
-//added globals for time selection
+//add globals for time selection in the new dual brain viewer for time series data
 var timeselection_interval_length = 0;//integer
 var timeselection_interval = 0;
 var timeselection = [];
@@ -41,8 +41,6 @@ var timeselection = [];
 // identify the initiator of the change of the time selection: brushing or movie timeline
 var triggered_by_timeselection = true;
 var triggered_by_changeinput=false;
-//store the unmapped selection value used to animate the time selection window
-var selection_x = [];
 
 //store the energy calculated from the time selection
 var timeselection_energy = [];
@@ -1190,7 +1188,6 @@ tv.plot = {
                 if (d3.event.selection != null) {
                     event_selection_x[0] = d3.event.selection[0];
                     event_selection_x[1] = d3.event.selection[1];
-                    selection_x = event_selection_x;
                 }
                 event_selection_x = event_selection_x.map(f.sc_ctx_x.invert);
                 timeselection = event_selection_x;
