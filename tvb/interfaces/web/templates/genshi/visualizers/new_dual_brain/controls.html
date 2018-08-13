@@ -1,7 +1,4 @@
 <div xmlns:xi="http://www.w3.org/2001/XInclude">
-
-    <!--3D control starts-->
-
     <fieldset xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:py="http://genshi.edgewall.org/">
 
         <dl>
@@ -36,7 +33,7 @@
 
             <!--SEEG controls-->
             <py:if test="not defined('isSEEG')">
-                 <!--no measurepoints toggle control for the dual viewer-->
+                <!--no measurepoints toggle control for the dual viewer-->
                 <xi:include href='../commons/brain_toggle_controls.html' py:with="hasRegionMap=isOneToOneMapping"/>
 
                 <py:if test="not extended_view">
@@ -51,40 +48,4 @@
         </dl>
 
     </fieldset>
-
-    <!--3D control ends-->
-
-    <!--2D control starts-->
-
-    <fieldset class="slider" xmlns:py="http://genshi.edgewall.org/">
-
-        <dl>
-            <py:if test="not extended_view">
-                <dt>
-                    <label for="ctrl-input-speed">Speed</label>
-                    <span class="slider-value" id="display-speed">3</span>
-                </dt>
-                <dd>
-                    <div class="sliderDiv sliderLabels">
-                        <div id="ctrl-input-speed" class="shadow sliderPosition"></div>
-                    </div>
-                </dd>
-            </py:if>
-
-
-            <dt>
-                <label for="ctrl-input-scale">Scaling</label>
-                <span class="slider-value" id="display-scale" title="signal amplitude multiplier">1</span>
-            </dt>
-            <dd>
-                <div class="sliderDiv sliderLabels">
-                    <div id="ctrl-input-scale" class="shadow sliderPosition"></div>
-                </div>
-            </dd>
-
-
-        </dl>
-    </fieldset>
-
-    <!--2d control ends-->
 </div>
