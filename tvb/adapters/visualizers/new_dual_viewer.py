@@ -45,7 +45,7 @@ class NewDualViewer(BrainViewer):
     New visualizer merging Brain 3D display and EEG lines display.
     Same input as the DualBrainViewer
     """
-    _ui_name = "New Viewer for Time Series in 3D and 2D"
+    _ui_name = "(Work in progress)New Viewer for Time Series in 3D and 2D"
     _ui_subsection = "new_brain_dual"
 
     def get_input_tree(self):

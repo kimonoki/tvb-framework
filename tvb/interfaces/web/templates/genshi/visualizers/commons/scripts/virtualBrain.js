@@ -163,7 +163,11 @@ var VB_BrainNavigator;
 
 
 //indicating we are drawing the energy spheres and applying material colors
+
+//time selection vars that appear in the new dual view
 var isDrawingSpheres = false;
+var timeselection_interval=0;
+var timeselection = [];
 /**
  * Change transparency of cortical surface from user-input.
  *

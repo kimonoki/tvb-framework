@@ -212,7 +212,7 @@ class WebStructure(object):
         SUB_SECTION_VIEW_23: "Wavelet Visualizer",
         SUB_SECTION_VIEW_24: "Annotations Visualizer",
         SUB_SECTION_VIEW_25: "Matrix Visualizer",
-        SUB_SECTION_VIEW_26: "New Brain Dual Activity Visualizer (3D and 2D)"
+        SUB_SECTION_VIEW_26: "(work in progress)New Brain Dual Activity Visualizer (3D and 2D)"
     }
 
 
