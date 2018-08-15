@@ -1312,6 +1312,7 @@ tv.plot = {
             $("#info-interval").html((timeselection[1] - timeselection[0]).toFixed(2) + "ms");
 
             if (triggered_by_timeselection) {
+                var timeselection_lasttime=timeselection_interval_length;
                 timeselection_interval = timeselection[1] - timeselection[0];
                 timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
                 //retrieve energy for the whole timeline rather than a slice
@@ -1321,8 +1322,13 @@ tv.plot = {
                 all_slice[0].lo = 0;
 
                 //call the energy computation method and block until get the enery data
-                showBlockerOverlay(50000);
-                tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
+                if(timeselection_lasttime!=timeselection_interval_length){
+                    showBlockerOverlay(50000);
+                    tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
+                }
+                else if(timeselection_lasttime===timeselection_interval_length&&timeselection_interval_length!=0){
+                    changeSphereMeasurePoints_energy();
+                }
                 //update the time in the input tag
                 var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
                 triggered_by_changeinput = true;
