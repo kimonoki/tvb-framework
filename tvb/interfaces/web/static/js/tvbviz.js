@@ -1291,9 +1291,20 @@ tv.plot = {
 
             //add main focus brush group
             f.gp_br_fcs = f.gp_fcs.append("g").classed("brush", true).call(f.br_fcs);
+            //default selection
+            f.timeselection_default();
         };
 
         //functions for the time selection window
+        f.timeselection_default = function () {
+            if (f.t0() + f.dt() * (f.shape()[0] - 1) > 100) {
+                d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [f.t0(), 100].map(f.sc_ctx_x));
+            }
+            else {
+                d3.select(f.gp_br_ctx_x.node()).call(f.br_ctx_x.move, [f.t0(),f.t0() + f.dt() * (f.shape()[0] - 1)].map(f.sc_ctx_x));
+            }
+        }
+
         f.timeselection_update_fn = function () {
             //display the selected time range
             d3.select("#SetIntervalStart").property('value', timeselection[0].toFixed(2));

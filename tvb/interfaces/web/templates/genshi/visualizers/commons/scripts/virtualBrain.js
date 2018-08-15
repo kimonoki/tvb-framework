@@ -427,7 +427,7 @@ function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, 
     withTransparency = transparencyStatus;
     //pause by default
     AG_isStopped = true;
-    _alphaValue=0.1;
+    _alphaValue=0.3;
     displayMeasureNodes=true;
 }
 
