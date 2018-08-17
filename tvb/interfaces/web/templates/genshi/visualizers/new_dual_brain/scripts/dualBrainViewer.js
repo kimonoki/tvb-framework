@@ -432,12 +432,11 @@ function submitSelectedChannels(isEndOfData) {
 
 
     //The shape we use for time series now only uses 1D
-    var dataShape = [AG_time.length, 1, AG_submitableSelectedChannels.length, 1];
+    var dataShape = [totalTimeLength, 1, AG_submitableSelectedChannels.length, 1];
     var selectedLabels = []
     for (let i = 0; i < AG_submitableSelectedChannels.length; i++) {
         selectedLabels.push([chanDisplayLabels[displayedChannels[i]]]);
     }
-
     //use d3 to create 2D plot
     ts = tv.plot.time_series();
     ts.baseURL(baseDataURLS[0]).preview(false).mode(0).state_var(0);
