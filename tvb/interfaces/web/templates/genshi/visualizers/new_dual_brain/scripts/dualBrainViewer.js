@@ -431,6 +431,7 @@ function submitSelectedChannels(isEndOfData) {
     }
 
 
+    //create 2D plot
     //The shape we use for time series now only uses 1D
     var dataShape = [totalTimeLength, 1, AG_submitableSelectedChannels.length, 1];
     var selectedLabels = []
@@ -450,6 +451,8 @@ function submitSelectedChannels(isEndOfData) {
     $('#time-series-viewer').empty();
     ts(d3.select("#time-series-viewer"));
     tsView = ts;
+
+    isnewDoubleView=true;
 
 
     // This is arbitrarily set to a value. To be consistent with tsview we rescale relative to this value

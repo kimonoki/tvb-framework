@@ -168,6 +168,8 @@ var VB_BrainNavigator;
 var isDrawingSpheres = false;
 var timeselection_interval=0;
 var timeselection = [];
+
+var isnewDoubleView=false;
 /**
  * Change transparency of cortical surface from user-input.
  *
@@ -1094,6 +1096,10 @@ function tick() {
         if (currentTimeValue > MAX_TIME) {
             // Next time value is no longer in activity data.
             initActivityData();
+            if (!isnewDoubleView&&isDoubleView) {
+                loadEEGChartFromTimeStep(0);
+                drawGraph(false, 0);
+            }
             shouldStep = false;
         }
 
@@ -1103,6 +1109,9 @@ function tick() {
             }
             if (shouldChangeCurrentActivitiesFile()) {
                 changeCurrentActivitiesFile();
+            }
+            if (!isnewDoubleView&&isDoubleView) {
+                drawGraph(true, TIME_STEP);
             }
         }
     }
@@ -1309,6 +1318,10 @@ function loadFromTimeStep(step) {
     nextActivitiesFileData = null;
     currentActivitiesFileLength = activitiesData.length * TIME_STEP;
     totalPassedActivitiesData = currentTimeValue;
+    // Also sync eeg monitor if in double view
+    if (!isnewDoubleView&&isDoubleView) {
+        loadEEGChartFromTimeStep(step);
+    }
     closeBlockerOverlay();
 }
 
