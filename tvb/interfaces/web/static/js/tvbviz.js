@@ -1326,8 +1326,13 @@ tv.plot = {
                     showBlockerOverlay(50000);
                     tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
                 }
-                else if(timeselection_lasttime===timeselection_interval_length&&timeselection_interval_length!=0){
-                    changeSphereMeasurePoints_energy();
+                else if (timeselection_lasttime === timeselection_interval_length && timeselection_interval_length != 0) {
+                    if (isInternalSensorView) {
+                        VSI_change_energySphericalMeasurePoints()
+                    }
+                    else {
+                        changeSphereMeasurePoints_energy();
+                    }
                 }
                 //update the time in the input tag
                 var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
