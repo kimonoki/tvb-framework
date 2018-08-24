@@ -665,7 +665,7 @@ tv.plot = {
             f.sz_ctx_y = {x: f.pad.x * 0.8, y: f.h() - 3 * f.pad.y - f.pad.y};
             if(f.viewer_type()==='svg'){
                 f.ul_ctx_x = {x: 2 * f.pad.x + f.sz_ctx_y.x, y: 2 * f.pad.y + f.sz_ctx_y.y};
-                f.sz_ctx_x = {x: f.w() - 3 * f.pad.x- f.sz_ctx_y.x, y: f.pad.y / 2};
+                f.sz_ctx_x = {x: f.w() - 3 * f.pad.x- f.sz_ctx_y.x, y: f.pad.y};
             }
             else{
                 f.ul_ctx_x = {x: f.pad.x, y: 2 * f.pad.y + f.sz_ctx_y.y};
@@ -918,7 +918,6 @@ tv.plot = {
         };
 
         f.render_focus = function () {
-
             var ts = f.ts()
                 , g = f.gp_lines.selectAll("g").data(f.da_lines, function (d) {
                 return d.id;
@@ -942,7 +941,8 @@ tv.plot = {
                         return f.sc_ctx_x(ts.data[i]);
                     })
                     .y(function (d) {
-                        return d;
+                        //use the scale variable directly
+                        return d*f.magic_fcs_amp_scl;
                     })
                     (d.sig);
             });
@@ -953,8 +953,6 @@ tv.plot = {
         f.render_contexts = function () {
             // draw context lines and average
             if(f.viewer_type()==='svg'){
-                            var ts = f.ts();
-
             // horizontal context line
             var f1 = f.gp_ctx_x.append("g").attr("style", "clip-path: url(#fig-ctx-x-clip)");
             var f2 = f1.selectAll("g").data([f.da_x]).enter();
@@ -996,7 +994,7 @@ tv.plot = {
                     }));
 
 
-                // vertical context lines
+            // vertical context lines
             f.gp_ctx_y.append("g").selectAll("g").data(f.da_y)
                 .enter()
                 .append("g").attr("transform", function (d, i) {
@@ -1070,13 +1068,13 @@ tv.plot = {
                     x_scaling = scale_brushed.domain()[1] / (dom[1] - dom[0]);
                     sc.domain(dom);
                     f.gp_ax_fcs_x.call(f.ax_fcs_x);
-                    
+
                     //keep the x context in the same range for the svg viewer
                     if(f.viewer_type()!='svg'){
                         f.sc_ctx_x.domain(dom);
                         f.gp_ax_ctx_x.call(f.ax_ctx_x);
                     }
-                    
+
 
                     // TODO: This seems to cause problems with negative values and commenting it out does not seem to
                     // cause any additional problems. This could do with some double checking.
@@ -1196,15 +1194,16 @@ tv.plot = {
                 f.gp_ctx_x.selectAll(".selected-time").remove();
 
                 //change the actual time point in the slider
-                if (d3.event.selection != null) {
-                    f.timeselection_update_fn()
-                }
+                    if (f.viewer_type() === 'dualbrain' && d3.event.selection != null) {
+                        f.timeselection_update_fn()
+                    }
                 }
 
             };
 
             // on end of focus brush
             // this is on f so that f can call it when everything else is done..
+            //this function can reset the status of the plot to the initial state
             f.br_fcs_endfn = function (no_render) {
                 if (!d3.event || !d3.event.sourceEvent) {
                     br_ctx_y_fn();
@@ -1216,8 +1215,6 @@ tv.plot = {
                 f.gp_br_fcs.node().__brush.selection = null;
                 f.gp_br_fcs.call(f.br_fcs);
                 f.scale_focus_stroke();
-
-
             };
 
 
@@ -1290,9 +1287,12 @@ tv.plot = {
             f.gp_br_ctx_x.classed("brush", true).attr("class", "time-selection-brush").call(f.br_ctx_x).selectAll("rect").attr("height", f.sz_ctx_x.y);
 
             //add main focus brush group
-            f.gp_br_fcs = f.gp_fcs.append("g").classed("brush", true).call(f.br_fcs);
+            f.gp_br_fcs = f.gp_fcs.append("g").classed("brush", true).call(f.br_fcs).call(f.br_fcs_endfn);
+
             //default selection
-            f.timeselection_default();
+            if(f.viewer_type()==='dualbrain'){
+                f.timeselection_default();
+            }
         };
 
         //functions for the time selection window
@@ -1326,7 +1326,7 @@ tv.plot = {
                     showBlockerOverlay(50000);
                     tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
                 }
-                else if (timeselection_lasttime === timeselection_interval_length && timeselection_interval_length != 0) {
+                else if(timeselection_lasttime===timeselection_interval_length&&timeselection_interval_length!=0){
                     if (isInternalSensorView) {
                         VSI_change_energySphericalMeasurePoints()
                     }
@@ -1340,7 +1340,9 @@ tv.plot = {
                 $('#TimeNow').val(timeselection[0].toFixed(2));
                 $('#slider').slider('value', time_index);
                 triggered_by_changeinput = false;
-                loadFromTimeStep(time_index);
+                if(f.viewer_type()==='dualbrain') {
+                    loadFromTimeStep(time_index);
+                }
             }
         };
 
