@@ -1428,9 +1428,8 @@ function readFileData(fileUrl, async, callIdentifier) {
 /////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
 //init spheres with energy controlling the radius
 function changeSphereMeasurePoints_energy() {
-    for (let i = 0; i < VS_selectedRegions.length; i++) {
-        // generate spheres
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[VS_selectedRegions[i]],timeselection_energy[i][currentTimeValue]);
+        for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], timeselection_energy[i][currentTimeValue]);//3 for the default radius value now, we will modify it later
         const bufferVertices = result[0];
         const bufferNormals = result[1];
         const bufferTriangles = result[2];
