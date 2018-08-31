@@ -380,7 +380,7 @@ function _VS_init_cubicalMeasurePoints() {
 
 function _VS_init_sphereMeasurePoints() {
     for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 1);//3 for the default radius value now, we will modify it later
+        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 2);//2 for the default radius value now, we will modify it later
         const bufferVertices = result[0];
         const bufferNormals = result[1];
         const bufferTriangles = result[2];
@@ -1428,13 +1428,25 @@ function readFileData(fileUrl, async, callIdentifier) {
 /////////////////////////////////////// ~~~~~~~~~~ START ENERGY RELATED METHOD ~~~~~~~~~~~~~ //////////////////////////////////
 //init spheres with energy controlling the radius
 function changeSphereMeasurePoints_energy() {
-        for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], timeselection_energy[i][currentTimeValue]);//3 for the default radius value now, we will modify it later
-        const bufferVertices = result[0];
-        const bufferNormals = result[1];
-        const bufferTriangles = result[2];
-        const bufferColor = createColorBufferForCube(false);
-        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
+    let energyIndex = 0;
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        if (tsView.channels().includes(i)) {
+            const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], timeselection_energy[energyIndex][currentTimeValue]);
+            energyIndex++;
+            const bufferVertices = result[0];
+            const bufferNormals = result[1];
+            const bufferTriangles = result[2];
+            const bufferColor = createColorBufferForCube(false);
+            measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
+        }
+        else {
+            const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 2);
+            const bufferVertices = result[0];
+            const bufferNormals = result[1];
+            const bufferTriangles = result[2];
+            const bufferColor = createColorBufferForCube(false);
+            measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, bufferColor];
+        }
     }
 }
 

@@ -27,13 +27,25 @@ function _VSI_bufferAtPoint(p, idx) {
 }
 
 function VSI_change_energySphericalMeasurePoints() {
-    for (let i = 0; i < VS_selectedRegions.length; i++) {
-        const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], timeselection_energy[i][currentTimeValue], 12, 12);
-        const bufferVertices = result[0];
-        const bufferNormals = result[1];
-        const bufferTriangles = result[2];
-        const vertexRegionBuffer = VSI_createColorBufferForSphere(i, bufferVertices.numItems * 3);
-        measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, vertexRegionBuffer];
+    let energyIndex = 0;
+    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
+        if (tsView.channels().includes(i)) {
+            const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], timeselection_energy[energyIndex][currentTimeValue], 12, 12);
+            energyIndex++;
+            const bufferVertices = result[0];
+            const bufferNormals = result[1];
+            const bufferTriangles = result[2];
+            const vertexRegionBuffer = VSI_createColorBufferForSphere(i, bufferVertices.numItems * 3);
+            measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, vertexRegionBuffer];
+        }
+        else {
+            const result = HLPR_sphereBufferAtPoint(gl, measurePoints[i], 3, 12, 12);
+            const bufferVertices = result[0];
+            const bufferNormals = result[1];
+            const bufferTriangles = result[2];
+            const vertexRegionBuffer = VSI_createColorBufferForSphere(i, bufferVertices.numItems * 3);
+            measurePointsBuffers[i] = [bufferVertices, bufferNormals, bufferTriangles, vertexRegionBuffer];
+        }
     }
 }
 

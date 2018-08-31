@@ -583,6 +583,17 @@ tv.plot = {
             f.render();
         }; // end function f()
 
+        f.update_energy=function(){
+            var all_slice = f.current_slice();
+                all_slice[0].di = f.shape()[1];
+                all_slice[0].hi = f.shape()[0];
+                all_slice[0].lo = 0;
+            tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
+
+        };
+
+        f.channel_lasttime=null;
+
         f.energy_callback = function (data) {
             timeselection_energy = data;
             if (isInternalSensorView) {
@@ -630,7 +641,6 @@ tv.plot = {
             f.prepare_data();
             f.status_line.text("rendering data...");
             f.render_focus();
-
             if (!f.we_are_setup) {
                 f.render_contexts();
                 f.add_brushes();
@@ -1219,8 +1229,6 @@ tv.plot = {
 
 
             f.br_fcs_startfn = function () {
-                // we will use the left upper of the brush to do a tooltip
-
                 //select a channel
                 var event_selection_y = [];
                 event_selection_y[1] = d3.event.selection[0][1];
@@ -1313,18 +1321,20 @@ tv.plot = {
 
             if (triggered_by_timeselection) {
                 var timeselection_lasttime=timeselection_interval_length;
+
                 timeselection_interval = timeselection[1] - timeselection[0];
                 timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
+
                 //retrieve energy for the whole timeline rather than a slice
                 var all_slice = f.current_slice();
                 all_slice[0].di = f.shape()[1];
                 all_slice[0].hi = f.shape()[0];
                 all_slice[0].lo = 0;
 
-                //call the energy computation method and block until get the enery data
-                if(timeselection_lasttime!=timeselection_interval_length){
+                //call the energy computation method and block until get the enery data if channel or time range is changed
+                if(timeselection_lasttime!=timeselection_interval_length||f.channel_lasttime!==f.channels()){
                     showBlockerOverlay(50000);
-                    tv.util.get_time_selection_energy(f.baseURL(), all_slice, f.energy_callback, f.channels(), f.mode(), f.state_var(), timeselection_interval_length);
+                    f.update_energy();
                 }
                 else if(timeselection_lasttime===timeselection_interval_length&&timeselection_interval_length!=0){
                     if (isInternalSensorView) {
@@ -1334,6 +1344,8 @@ tv.plot = {
                         changeSphereMeasurePoints_energy();
                     }
                 }
+                f.channel_lasttime=f.channels();
+
                 //update the time in the input tag
                 var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
                 triggered_by_changeinput = true;
