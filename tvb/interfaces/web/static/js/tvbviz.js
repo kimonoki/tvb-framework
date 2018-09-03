@@ -1320,11 +1320,20 @@ tv.plot = {
             $("#info-interval").html((timeselection[1] - timeselection[0]).toFixed(2) + "ms");
 
             if (triggered_by_timeselection) {
-                var timeselection_lasttime=timeselection_interval_length;
+                //update the time in the input tag
+                var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
+                triggered_by_changeinput = true;
+                $('#TimeNow').val(timeselection[0].toFixed(2));
+                $('#slider').slider('value', time_index);
+                triggered_by_changeinput = false;
+                //update 3D viewer's time
+                if (f.viewer_type() === 'dualbrain') {
+                    loadFromTimeStep(time_index);
+                }
 
+                var timeselection_lasttime = timeselection_interval_length;
                 timeselection_interval = timeselection[1] - timeselection[0];
                 timeselection_interval_length = parseInt(timeselection_interval / f.dt()) - 1;
-
                 //retrieve energy for the whole timeline rather than a slice
                 var all_slice = f.current_slice();
                 all_slice[0].di = f.shape()[1];
@@ -1332,11 +1341,11 @@ tv.plot = {
                 all_slice[0].lo = 0;
 
                 //call the energy computation method and block until get the enery data if channel or time range is changed
-                if(timeselection_lasttime!=timeselection_interval_length||f.channel_lasttime!==f.channels()){
+                if (timeselection_lasttime != timeselection_interval_length || f.channel_lasttime !== f.channels()) {
                     showBlockerOverlay(50000);
                     f.update_energy();
                 }
-                else if(timeselection_lasttime===timeselection_interval_length&&timeselection_interval_length!=0){
+                else if (timeselection_lasttime === timeselection_interval_length && timeselection_interval_length != 0) {
                     if (isInternalSensorView) {
                         VSI_change_energySphericalMeasurePoints()
                     }
@@ -1344,17 +1353,7 @@ tv.plot = {
                         changeSphereMeasurePoints_energy();
                     }
                 }
-                f.channel_lasttime=f.channels();
-
-                //update the time in the input tag
-                var time_index = parseInt((timeselection[0] - f.t0()) / f.dt());
-                triggered_by_changeinput = true;
-                $('#TimeNow').val(timeselection[0].toFixed(2));
-                $('#slider').slider('value', time_index);
-                triggered_by_changeinput = false;
-                if(f.viewer_type()==='dualbrain') {
-                    loadFromTimeStep(time_index);
-                }
+                f.channel_lasttime = f.channels();
             }
         };
 
