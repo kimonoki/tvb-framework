@@ -26,20 +26,20 @@
 }
 
 /* !------------------------------------------------------- */
-/* ! COMPONENT: New dual brain viewer   */
+/* ! COMPONENT: New dual brain viewer                       */
 /* !------------------------------------------------------- */
 
-/*overlay changed in d3v4 for new dual brain viewer*/
+/*overlay changed in d3v5 for new dual brain viewer*/
 rect.overlay{
     visibility: hidden;
 }
 
-/*universal html font styling not working while using d3v4 in the new dual brain viewer*/
+/*universal html font styling not working while using d3v5 in the new dual brain viewer*/
 text{
     font-size:small;
 }
 
-/*d3v4 extent=>selection*/
+/*d3v5 extent=>selection*/
 rect.selection {
     stroke: red;
 
